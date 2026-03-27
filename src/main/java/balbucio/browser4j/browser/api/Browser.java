@@ -18,7 +18,8 @@ public interface Browser {
 
     void postMessage(String event, Object data);
     
-    void onRequest(balbucio.browser4j.network.interception.RequestInterceptor interceptor);
+    balbucio.browser4j.network.api.NetworkModule network();
+    balbucio.browser4j.security.api.SecurityModule security();
     
     // Internal use for bridge registration, can be downcasted or extended
     Object getNativeBrowser();

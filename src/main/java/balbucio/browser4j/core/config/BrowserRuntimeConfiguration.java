@@ -1,6 +1,8 @@
 package balbucio.browser4j.core.config;
 
 import java.io.File;
+import java.util.function.Consumer;
+import balbucio.browser4j.observability.BrowserMetric;
 
 public class BrowserRuntimeConfiguration {
 
@@ -10,6 +12,9 @@ public class BrowserRuntimeConfiguration {
     private final boolean enableSandbox;
     private final boolean osrEnabled;
     private final int windowlessFrameRate;
+    private final boolean enableNetworkInterception;
+    private final boolean enableSecurity;
+    private final Consumer<BrowserMetric> metricHandler;
 
     private BrowserRuntimeConfiguration(Builder builder) {
         this.cachePath = builder.cachePath;
@@ -18,6 +23,9 @@ public class BrowserRuntimeConfiguration {
         this.enableSandbox = builder.enableSandbox;
         this.osrEnabled = builder.osrEnabled;
         this.windowlessFrameRate = builder.windowlessFrameRate;
+        this.enableNetworkInterception = builder.enableNetworkInterception;
+        this.enableSecurity = builder.enableSecurity;
+        this.metricHandler = builder.metricHandler;
     }
 
     public String getCachePath() { return cachePath; }
@@ -26,6 +34,9 @@ public class BrowserRuntimeConfiguration {
     public boolean isEnableSandbox() { return enableSandbox; }
     public boolean isOsrEnabled() { return osrEnabled; }
     public int getWindowlessFrameRate() { return windowlessFrameRate; }
+    public boolean isEnableNetworkInterception() { return enableNetworkInterception; }
+    public boolean isEnableSecurity() { return enableSecurity; }
+    public Consumer<BrowserMetric> getMetricHandler() { return metricHandler; }
 
     public static Builder builder() {
         return new Builder();
@@ -38,6 +49,9 @@ public class BrowserRuntimeConfiguration {
         private boolean enableSandbox = false;
         private boolean osrEnabled = false;
         private int windowlessFrameRate = 60;
+        private boolean enableNetworkInterception = true;
+        private boolean enableSecurity = true;
+        private Consumer<BrowserMetric> metricHandler = null;
 
         public Builder cachePath(String cachePath) {
             this.cachePath = cachePath;
@@ -66,6 +80,21 @@ public class BrowserRuntimeConfiguration {
 
         public Builder windowlessFrameRate(int windowlessFrameRate) {
             this.windowlessFrameRate = windowlessFrameRate;
+            return this;
+        }
+
+        public Builder enableNetworkInterception(boolean enableNetworkInterception) {
+            this.enableNetworkInterception = enableNetworkInterception;
+            return this;
+        }
+
+        public Builder enableSecurity(boolean enableSecurity) {
+            this.enableSecurity = enableSecurity;
+            return this;
+        }
+
+        public Builder metricHandler(Consumer<BrowserMetric> metricHandler) {
+            this.metricHandler = metricHandler;
             return this;
         }
 

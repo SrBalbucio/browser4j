@@ -1,60 +1,70 @@
 package balbucio.browser4j.network.interception;
 
+import balbucio.browser4j.network.api.NetworkModule;
+import balbucio.browser4j.network.api.RequestHandler;
+import balbucio.browser4j.network.api.ResponseHandler;
+import balbucio.browser4j.security.api.SecurityModuleImpl;
+import balbucio.browser4j.observability.MetricsTracker;
+
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
-import org.cef.handler.CefRequestHandlerAdapter;
-import org.cef.handler.CefResourceRequestHandler;
-import org.cef.handler.CefResourceRequestHandlerAdapter;
+import org.cef.handler.*;
 import org.cef.network.CefPostData;
 import org.cef.network.CefPostDataElement;
 import org.cef.network.CefRequest;
+import org.cef.network.CefResponse;
+import org.cef.network.CefURLRequest;
+import org.cef.callback.CefCallback;
+import org.cef.misc.IntRef;
+import org.cef.misc.StringRef;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NetworkHandlerImpl {
-    private final List<RequestInterceptor> interceptors = new ArrayList<>();
+public class NetworkHandlerImpl implements NetworkModule {
+    private final List<RequestHandler> requestHandlers = new ArrayList<>();
+    private final List<ResponseHandler> responseHandlers = new ArrayList<>();
+    private final MetricsTracker metricsTracker;
+    private final SecurityModuleImpl securityModule;
 
-    public NetworkHandlerImpl(CefClient client) {
+    public NetworkHandlerImpl(CefClient client, MetricsTracker metricsTracker, SecurityModuleImpl securityModule) {
+        this.metricsTracker = metricsTracker;
+        this.securityModule = securityModule;
+        
         client.addRequestHandler(new CefRequestHandlerAdapter() {
             @Override
             public boolean onBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request, boolean user_gesture, boolean is_redirect) {
-                String url = request.getURL();
-                String method = request.getMethod();
-
-                for (RequestInterceptor interceptor : interceptors) {
-                    RequestDecision decision = interceptor.intercept(url, method);
-                    if (!decision.isAllowed()) {
-                        return true; 
-                    }
+                if (securityModule.isUrlBlocked(request.getURL())) {
+                    return true; 
                 }
-                
                 return false; 
             }
 
             @Override
             public CefResourceRequestHandler getResourceRequestHandler(CefBrowser browser, CefFrame frame, CefRequest request, boolean isNavigation, boolean isDownload, String requestInitiator, org.cef.misc.BoolRef disableDefaultHandling) {
                 return new CefResourceRequestHandlerAdapter() {
+
                     @Override
                     public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
+                        metricsTracker.markRequestStart(request.getIdentifier());
+                        
                         String url = request.getURL();
                         String method = request.getMethod();
 
-                        for (RequestInterceptor interceptor : interceptors) {
-                            RequestDecision decision = interceptor.intercept(url, method);
+                        for (RequestHandler handler : requestHandlers) {
+                            RequestDecision decision = handler.handle(url, method);
                             
-                            if (!decision.isAllowed()) {
-                                return true;
-                            }
+                            if (!decision.isAllowed()) return true;
                             
                             if (decision.getModifiedHeaders() != null) {
-                                Map<String, String> currentHeaders = new HashMap<>();
-                                request.getHeaderMap(currentHeaders);
-                                currentHeaders.putAll(decision.getModifiedHeaders());
-                                request.setHeaderMap(currentHeaders);
+                                Map<String, String> hdrs = new HashMap<>();
+                                request.getHeaderMap(hdrs);
+                                hdrs.putAll(decision.getModifiedHeaders());
+                                request.setHeaderMap(hdrs);
                             }
                             
                             if (decision.getModifiedBody() != null) {
@@ -65,19 +75,74 @@ public class NetworkHandlerImpl {
                                 request.setPostData(postData);
                             }
                         }
-                        
                         return false;
+                    }
+
+                    @Override
+                    public boolean onResourceResponse(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response) {
+                        if (frame.isMain()) {
+                            try {
+                                balbucio.browser4j.core.config.BrowserRuntimeConfiguration config = balbucio.browser4j.core.runtime.BrowserRuntime.getConfig();
+                                if (config != null && config.isEnableSecurity()) {
+                                    response.setHeaderByName("Content-Security-Policy", "script-src 'self'", true);
+                                }
+                            } catch (Exception e) {}
+                        }
+                        return false;
+                    }
+
+                    @Override
+                    public CefResourceHandler getResourceHandler(CefBrowser browser, CefFrame frame, CefRequest request) {
+                        for (RequestHandler handler : requestHandlers) {
+                            RequestDecision decision = handler.handle(request.getURL(), request.getMethod());
+                            if (decision.getMockedResponse() != null) {
+                                return new MockResourceHandler(decision.getMockedResponse());
+                            }
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public CefResponseFilter getResourceResponseFilter(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response) {
+                        if (responseHandlers.isEmpty()) return null;
+                        
+                        return new CefResponseFilter() {
+                            @Override
+                            public boolean initFilter() { return true; }
+
+                            @Override
+                            public FilterStatus filter(ByteBuffer data_in, int data_in_size, IntRef data_in_read, ByteBuffer data_out, int data_out_size, IntRef data_out_written) {
+                                if (data_in_size == 0) return FilterStatus.RESPONSE_FILTER_DONE;
+                                byte[] chunk = new byte[data_in_size];
+                                data_in.get(chunk);
+                                for (ResponseHandler handler : responseHandlers) {
+                                    handler.handle(request.getURL(), response.getStatus(), response.getMimeType(), chunk);
+                                }
+                                int writeSize = Math.min(data_in_size, data_out_size);
+                                data_out.put(chunk, 0, writeSize);
+                                data_in_read.set(writeSize);
+                                data_out_written.set(writeSize);
+                                return writeSize < data_in_size ? FilterStatus.RESPONSE_FILTER_NEED_MORE_DATA : FilterStatus.RESPONSE_FILTER_DONE;
+                            }
+                        };
+                    }
+
+                    @Override
+                    public void onResourceLoadComplete(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response, CefURLRequest.Status status, long receivedContentLength) {
+                        metricsTracker.markRequestEnd(request.getIdentifier(), request.getURL(), response.getStatus(), receivedContentLength);
                     }
                 };
             }
         });
     }
 
-    public void addInterceptor(RequestInterceptor interceptor) {
-        this.interceptors.add(interceptor);
+    @Override
+    public void onRequest(RequestHandler handler) {
+        requestHandlers.add(handler);
     }
 
-    public void removeInterceptor(RequestInterceptor interceptor) {
-        this.interceptors.remove(interceptor);
+    @Override
+    public void onResponse(ResponseHandler handler) {
+        responseHandlers.add(handler);
     }
 }

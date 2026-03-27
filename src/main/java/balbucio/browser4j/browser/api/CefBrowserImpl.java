@@ -18,6 +18,12 @@ import org.cef.handler.CefRenderHandlerAdapter;
 import balbucio.browser4j.browser.events.FrameCaptureListener;
 import balbucio.browser4j.browser.input.InputController;
 import balbucio.browser4j.core.runtime.BrowserRuntime;
+import balbucio.browser4j.security.api.SecurityModuleImpl;
+import balbucio.browser4j.security.handlers.PopupAndLifeSpanHandler;
+import balbucio.browser4j.security.handlers.DownloadBlockerHandler;
+import balbucio.browser4j.observability.MetricsTracker;
+import balbucio.browser4j.network.api.NetworkModule;
+import balbucio.browser4j.security.api.SecurityModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +36,8 @@ public class CefBrowserImpl implements Browser {
     private final JSBridge jsBridge;
     private final NetworkHandlerImpl networkHandler;
     private final InputController inputController;
+    private final MetricsTracker metricsTracker;
+    private final SecurityModuleImpl securityModule;
 
     public CefBrowserImpl(CefApp cefApp) {
         this.listeners = new ArrayList<>();
@@ -40,7 +48,12 @@ public class CefBrowserImpl implements Browser {
         setupHandlers(this.cefClient);
 
         this.jsBridge = new JSBridge(this.cefClient, this);
-        this.networkHandler = new NetworkHandlerImpl(this.cefClient);
+        this.metricsTracker = new MetricsTracker();
+        this.securityModule = new SecurityModuleImpl();
+        this.networkHandler = new NetworkHandlerImpl(this.cefClient, this.metricsTracker, this.securityModule);
+
+        this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
+        this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
 
         boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
         this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false);
@@ -167,8 +180,13 @@ public class CefBrowserImpl implements Browser {
     }
 
     @Override
-    public void onRequest(RequestInterceptor interceptor) {
-        networkHandler.addInterceptor(interceptor);
+    public NetworkModule network() {
+        return networkHandler;
+    }
+
+    @Override
+    public SecurityModule security() {
+        return securityModule;
     }
 
     @Override
