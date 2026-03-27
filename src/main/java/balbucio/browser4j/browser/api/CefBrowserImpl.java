@@ -12,6 +12,12 @@ import balbucio.browser4j.network.interception.NetworkHandlerImpl;
 import balbucio.browser4j.network.interception.RequestInterceptor;
 import balbucio.browser4j.ui.abstraction.BrowserView;
 import balbucio.browser4j.ui.swing.SwingBrowserView;
+import java.nio.ByteBuffer;
+import java.awt.Rectangle;
+import org.cef.handler.CefRenderHandlerAdapter;
+import balbucio.browser4j.browser.events.FrameCaptureListener;
+import balbucio.browser4j.browser.input.InputController;
+import balbucio.browser4j.core.runtime.BrowserRuntime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,23 +26,27 @@ public class CefBrowserImpl implements Browser {
     private final CefBrowser cefBrowser;
     private final CefClient cefClient;
     private final List<BrowserEventListener> listeners;
+    private final List<FrameCaptureListener> frameListeners;
     private final JSBridge jsBridge;
     private final NetworkHandlerImpl networkHandler;
+    private final InputController inputController;
 
     public CefBrowserImpl(CefApp cefApp) {
         this.listeners = new ArrayList<>();
-        
+        this.frameListeners = new ArrayList<>();
+
         this.cefClient = cefApp.createClient();
-        
+
         setupHandlers(this.cefClient);
-        
+
         this.jsBridge = new JSBridge(this.cefClient, this);
         this.networkHandler = new NetworkHandlerImpl(this.cefClient);
-        
-        // offscreen rendering = false, transparent = false
-        this.cefBrowser = cefClient.createBrowser("about:blank", false, false);
+
+        boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
+        this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false);
+        this.inputController = new InputController(this.cefBrowser);
     }
-    
+
     public static Browser create(CefApp cefApp) {
         return new CefBrowserImpl(cefApp);
     }
@@ -78,6 +88,15 @@ public class CefBrowserImpl implements Browser {
                     for (BrowserEventListener listener : listeners) {
                         listener.onNavigation(url);
                     }
+                }
+            }
+        });
+
+        client.addRenderHandler(new CefRenderHandlerAdapter() {
+            @Override
+            public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height) {
+                for (FrameCaptureListener listener : frameListeners) {
+                    listener.onFrame(buffer, width, height);
                 }
             }
         });
@@ -131,6 +150,16 @@ public class CefBrowserImpl implements Browser {
     public void removeEventListener(BrowserEventListener listener) {
         listeners.remove(listener);
     }
+    
+    @Override
+    public void addFrameCaptureListener(FrameCaptureListener listener) {
+        frameListeners.add(listener);
+    }
+
+    @Override
+    public void removeFrameCaptureListener(FrameCaptureListener listener) {
+        frameListeners.remove(listener);
+    }
 
     @Override
     public void postMessage(String event, Object data) {
@@ -146,7 +175,12 @@ public class CefBrowserImpl implements Browser {
     public Object getNativeBrowser() {
         return cefBrowser;
     }
-    
+
+    @Override
+    public InputController getInputController() {
+        return inputController;
+    }
+
     public BrowserView getView() {
         return new SwingBrowserView(cefBrowser);
     }

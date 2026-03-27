@@ -25,6 +25,13 @@ public class BrowserProcessManager {
                     command_line.appendSwitch("disable-setuid-sandbox");
                 }
                 
+                if (config.isOsrEnabled()) {
+                    command_line.appendSwitch("disable-gpu-vsync");
+                    if (config.getWindowlessFrameRate() <= 0) {
+                        command_line.appendSwitch("disable-frame-rate-limit");
+                    }
+                }
+                
                 // Add default flags for reliability in headless or critical desktop apps
                 command_line.appendSwitch("disable-web-security"); // Depending on use case
                 command_line.appendSwitch("ignore-certificate-errors");

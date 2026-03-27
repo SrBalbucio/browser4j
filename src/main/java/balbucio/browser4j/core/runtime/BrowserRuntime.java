@@ -63,6 +63,7 @@ public class BrowserRuntime {
         settings.user_data_path = config.getUserDataPath();
         settings.no_sandbox = !config.isEnableSandbox();
         settings.log_severity = CefSettings.LogSeverity.LOGSEVERITY_DEFAULT;
+        settings.windowless_rendering_enabled = config.isOsrEnabled();
 
         // Custom config via Process Manager
         BrowserProcessManager.configureArgs(settings, config);
@@ -86,5 +87,12 @@ public class BrowserRuntime {
             throw new IllegalStateException("BrowserRuntime is not initialized. Call init() first.");
         }
         return instance.cefApp;
+    }
+    
+    public static BrowserRuntimeConfiguration getConfig() {
+        if (instance == null) {
+            throw new IllegalStateException("BrowserRuntime is not initialized.");
+        }
+        return instance.config;
     }
 }
