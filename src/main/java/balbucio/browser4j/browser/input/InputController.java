@@ -15,16 +15,16 @@ public class InputController {
         int id = isClickUp ? MouseEvent.MOUSE_RELEASED : MouseEvent.MOUSE_PRESSED;
         // Depending on JCEF capabilities or component wrapping, we simulate raw java.awt events.
         MouseEvent event = new MouseEvent(browser.getUIComponent(), id, System.currentTimeMillis(), 0, x, y, 1, false, buttonId);
-        browser.sendMouseEvent(event);
+        browser.getUIComponent().dispatchEvent(event);
     }
 
     public void sendSyntheticMouseMove(int x, int y) {
         MouseEvent event = new MouseEvent(browser.getUIComponent(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, x, y, 0, false, MouseEvent.NOBUTTON);
-        browser.sendMouseEvent(event);
+        browser.getUIComponent().dispatchEvent(event);
     }
 
     public void sendSyntheticKeyPress(int keyCode, char keyChar) {
         KeyEvent event = new KeyEvent(browser.getUIComponent(), KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, keyCode, keyChar);
-        browser.sendKeyEvent(event);
+        browser.getUIComponent().dispatchEvent(event);
     }
 }

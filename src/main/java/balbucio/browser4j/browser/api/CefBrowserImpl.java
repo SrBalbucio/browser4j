@@ -5,8 +5,6 @@ import balbucio.browser4j.browser.events.BrowserEventListener;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
-import org.cef.browser.CefBrowserOsrWithHandler;
-import org.cef.browser.CefRendering;
 import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.network.CefCookieManager;
@@ -37,6 +35,7 @@ import balbucio.browser4j.devtools.DevToolsModule;
 import balbucio.browser4j.streaming.Frame;
 import org.cef.browser.CefRequestContext;
 import balbucio.browser4j.network.cookies.CookieManager;
+import balbucio.browser4j.security.profile.FingerprintInjector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +51,7 @@ public class CefBrowserImpl implements Browser {
     private final MetricsTracker metricsTracker;
     private final SecurityModuleImpl securityModule;
     private final CookieManager cookieManager;
+    private final BrowserOptions options;
     private Consumer<String> consoleMessageHandler;
 
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -75,6 +75,7 @@ public class CefBrowserImpl implements Browser {
     }
 
     public CefBrowserImpl(CefApp cefApp, BrowserOptions options) {
+        this.options = options;
         this.listeners = new ArrayList<>();
         this.frameListeners = new ArrayList<>();
 
@@ -124,6 +125,10 @@ public class CefBrowserImpl implements Browser {
             @Override
             public void onLoadStart(CefBrowser browser, org.cef.browser.CefFrame frame, CefRequest.TransitionType transitionType) {
                 if (frame.isMain()) {
+                    if (options != null && options.getSession() != null && options.getSession().getProfile() != null && options.getSession().getProfile().getFingerprint() != null) {
+                        FingerprintInjector.inject(browser, options.getSession().getProfile().getFingerprint());
+                    }
+
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadStart(frame.getURL());
                     }

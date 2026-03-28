@@ -1,0 +1,136 @@
+# Eventos, Rede e Segurança Avançada no Browser4j
+
+Esta parte da documentação compreende os métodos arquiteturais de monitoramento (escuta de mudança e estados) e os submódulos da biblioteca: `NetworkModule`, `SecurityModule`, `Cookies`, e `DevTools`. 
+
+---
+
+### Monitorando Eventos de Carregamento 
+
+O Browser4j possui uma classe base customizada para relatar transições do progresso do carregamento. Você deve acoplar classes aderentes a `balbucio.browser4j.browser.events.BrowserEventListener`.
+
+```java
+import balbucio.browser4j.browser.events.BrowserEventListener;
+import balbucio.browser4j.browser.api.Browser;
+
+browser.addEventListener(new BrowserEventListener() {
+    
+    @Override
+    public void onLoadStart(String str_url) {
+        System.out.println("Iniciando a requisição para " + str_url);
+    }
+
+    @Override
+    public void onLoadEnd(String str_url, int code) {
+        System.out.println("Carregamento Finalizado. Status: " + code);
+        // Exemplo: 200 (OK), 404 (Not Found)
+    }
+
+    @Override
+    public void onLoadError(String str_url, int errorCode, String reasonText) {
+        System.err.println("Erro Interno de Protocolo ao conectar em " + str_url);
+        System.err.println("Razão Explicativa: " + reasonText);
+    }
+
+    @Override
+    public void onNavigation(String newBarUrl) {
+         System.out.println("O Usuário navegou para: " + newBarUrl);
+    }
+});
+```
+
+### Captura de Quadros (Renderização OSR - Headless / Invisível)
+Para aplicações sem tela física, ou "gravadores de ações do browser" você receberá pacotes limpos contendo matrizes ByteBuffer em tempo real na GPU do Frame de exibição. Lembre-se, o construtor Runtime deve ter explicitado `.osrEnabled(true)`.
+
+```java
+import balbucio.browser4j.browser.events.FrameCaptureListener;
+import balbucio.browser4j.streaming.Frame;
+
+browser.addFrameCaptureListener(new FrameCaptureListener() {
+    @Override
+    public void onFrame(Frame capturedFrame) {
+        int w = capturedFrame.getWidth();
+        int h = capturedFrame.getHeight();
+        java.nio.ByteBuffer rgba_buffer = capturedFrame.getBuffer();
+        
+        // Aqui o frame pode ser exportado para .png, desenhado num Canvas HTML5 paralelo
+        // ou interpretado com Machine Learning (OpenCV).
+    }
+});
+```
+
+---
+
+### Módulos Integrados e Gerência Persistente
+
+Em tempo de execução sob abas ativas, as abas oferecem os métodos estendidos do projeto do Browser4j. Retorne seus controladores por `browser.network()`, `browser.security()`, `browser.cookies()`, e `browser.devtools()`.
+
+
+#### `NetworkModule` (Controle de Rede)
+Módulo projetado para bloqueio forçado, redirecionamento ou alteração de requisições HTTPS disparadas livremente pelo Javascript ou Tags de Imagem na web. O método base que é utilizado quando **Intercepção Global** foi ligada (veja docs [Runtime](01-runtime-config.md)).
+
+```java
+import balbucio.browser4j.network.api.NetworkModule;
+import balbucio.browser4j.network.interception.RequestInterceptor;
+
+NetworkModule subrede = browser.network();
+
+// Bloqueia qualquer tentativa do javascript carregar a API do Google Analytics na página:
+subrede.addInterceptor(new RequestInterceptor() {
+    @Override
+    public balbucio.browser4j.network.interception.InterceptResult intercept(balbucio.browser4j.network.interception.Request req) {
+        if (req.getUrl().contains("google-analytics.com")) {
+            // Cancelar requisição bloqueando sua passagem e retornando ERRO (ABORTED) nativamente 
+            return balbucio.browser4j.network.interception.InterceptResult.cancel();
+        }
+        
+        return balbucio.browser4j.network.interception.InterceptResult.continue_();
+    }
+});
+```
+
+---
+
+#### `SecurityModule` (Controle do Comportamento Aberto)
+Projetado para restringir as janelas popup (Anúncios do botão de Download das páginas) não autorizadas, Downloads de links diretos de executáveis, e controle estrito.
+
+```java
+import balbucio.browser4j.security.api.SecurityModule;
+
+SecurityModule seguranca = browser.security();
+
+// Proibe redirecionamentos sem controle e popups `target="_blank"` em botões maliciosos
+seguranca.setBlockPopups(true);
+```
+
+---
+
+#### `CookieManager` (Isolamento e Controle de Sessão)
+Permite salvar e apagar tokens temporários de sessões, sem utilizar o menu tradicional do Chrome e programaticamente definir se um usuário "está logado" num site pelo JWT ou JessionID.
+
+```java
+import balbucio.browser4j.network.cookies.CookieManager;
+
+CookieManager gerenciadorDeCookies = browser.cookies();
+
+// Ler de forma síncrona
+gerenciadorDeCookies.getCookies("https://app.sistema.com", (cookiesFound) -> {
+    for(var c : cookiesFound) {
+        System.out.println("- Chave: " + c.getName() + " | - Valor: " + c.getValue()); 
+    }
+});
+
+// Limpar cache temporário e tokens forçosamente antes de logar
+gerenciadorDeCookies.clearCookies(null); 
+```
+
+---
+
+#### `DevTools`
+Gatilho visual para a janela autônoma de inspecionar elementos do código HTML:
+
+```java
+browser.devtools().open();
+
+// Fecha o painel
+// browser.devtools().close();
+```

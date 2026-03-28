@@ -61,7 +61,7 @@ public class BrowserRuntime {
         CefSettings settings = new CefSettings();
         settings.cache_path = config.getCachePath();
 //        settings. = config.getUserDataPath();
-        settings.no_sandbox = !config.isEnableSandbox();
+//        settings.no_sandbox = !config.isEnableSandbox(); // Utilizar via args
         settings.log_severity = CefSettings.LogSeverity.LOGSEVERITY_DEFAULT;
         settings.windowless_rendering_enabled = config.isOsrEnabled();
         settings.persist_session_cookies = config.isCookiesPersistent();
