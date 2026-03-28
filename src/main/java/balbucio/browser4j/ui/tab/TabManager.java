@@ -51,6 +51,11 @@ public class TabManager {
             : CefBrowserImpl.create(BrowserRuntime.getCefApp());
             
         Tab tab = new Tab(id, browser);
+        
+        if (options != null && options.getSession() != null) {
+            tab.getState().setIncognito(options.getSession().isIncognito());
+        }
+
         tabs.put(id, tab);
 
         for (TabManagerListener listener : listeners) {
@@ -131,6 +136,22 @@ public class TabManager {
     public void closeAll() {
         for (String id : new ArrayList<>(tabs.keySet())) {
             closeTab(id);
+        }
+    }
+
+    public List<Tab> getIncognitoTabs() {
+        List<Tab> incognitoTabs = new ArrayList<>();
+        for (Tab tab : tabs.values()) {
+            if (tab.getState().isIncognito()) {
+                incognitoTabs.add(tab);
+            }
+        }
+        return incognitoTabs;
+    }
+
+    public void closeAllIncognitoTabs() {
+        for (Tab tab : getIncognitoTabs()) {
+            closeTab(tab.getId());
         }
     }
 }

@@ -95,20 +95,20 @@ public class CefBrowserImpl implements Browser {
         this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
 
         CefRequestContext context = CefRequestContext.getGlobalContext();
+        CefCookieManager globalCookieManager = CefCookieManager.getGlobalManager();
 
-        // verificar se isso não é melhor fazer de forma persistente e individual
-        CefCookieManager cookieManager = CefCookieManager.getGlobalManager();
-
-        if (options != null) {
-            // Apply User-Agent by overriding context settings if needed
-            // Currently, profile path in JCEF isolated context isn't an easy explicit API in standard un-patched jcef Java bindings
-            // unless we do CefRequestContext.createContext(), but we rely on simple builder if available.
-            // But we will use the isolated context or just get the current one's cookie manager
-            // CefRequestContext.createContext(CefRequestContextHandler)
-            // But for simple cookie isolation:
+        if (options != null && options.getSession() != null) {
+            Session session = options.getSession();
+            if (session.isIncognito()) {
+                if (session.getNativeContext() == null) {
+                    // Create isolated in-memory context (empty handler prevents caching)
+                    session.setNativeContext(CefRequestContext.createContext(new org.cef.handler.CefRequestContextHandlerAdapter() {}));
+                }
+                context = (CefRequestContext) session.getNativeContext();
+            }
         }
 
-        this.cookieManager = new CookieManager(cookieManager);
+        this.cookieManager = new CookieManager(globalCookieManager);
 
         boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
         this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false, context);

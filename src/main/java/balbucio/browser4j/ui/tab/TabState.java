@@ -5,6 +5,7 @@ public class TabState {
     private String url = "";
     private boolean loading = false;
     private long lastAccessedAt = System.currentTimeMillis();
+    private boolean incognito = false;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -17,4 +18,7 @@ public class TabState {
 
     public long getLastAccessedAt() { return lastAccessedAt; }
     public void markAccessed() { this.lastAccessedAt = System.currentTimeMillis(); }
+    
+    public boolean isIncognito() { return incognito; }
+    public void setIncognito(boolean incognito) { this.incognito = incognito; }
 }
