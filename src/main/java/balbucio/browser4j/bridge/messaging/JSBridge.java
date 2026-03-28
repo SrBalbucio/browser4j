@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JSBridge {
     private static final Logger log = LoggerFactory.getLogger(JSBridge.class);
@@ -20,10 +23,38 @@ public class JSBridge {
     private final CefMessageRouter msgRouter;
     private final List<MessageHandler> handlers = new ArrayList<>();
     private final JsonSerializer serializer = new JsonSerializer();
+    private final Map<String, CompletableFuture<Object>> pendingEvaluations = new ConcurrentHashMap<>();
 
     public JSBridge(CefClient client, Browser javaBrowser) {
         this.javaBrowser = javaBrowser;
         
+        // Internal handler for async js evaluation results
+        this.addHandler((event, data) -> {
+            if ("__bridge_eval_success".equals(event)) {
+                if (data instanceof Map) {
+                    Map<?, ?> map = (Map<?, ?>) data;
+                    String id = (String) map.get("id");
+                    if (id != null) {
+                        CompletableFuture<Object> future = pendingEvaluations.remove(id);
+                        if (future != null) {
+                            future.complete(map.get("result"));
+                        }
+                    }
+                }
+            } else if ("__bridge_eval_error".equals(event)) {
+                if (data instanceof Map) {
+                    Map<?, ?> map = (Map<?, ?>) data;
+                    String id = (String) map.get("id");
+                    if (id != null) {
+                        CompletableFuture<Object> future = pendingEvaluations.remove(id);
+                        if (future != null) {
+                            future.completeExceptionally(new Exception(String.valueOf(map.get("error"))));
+                        }
+                    }
+                }
+            }
+        });
+
         // Define default window.bridge bindings
         CefMessageRouter.CefMessageRouterConfig config = new CefMessageRouter.CefMessageRouterConfig("bridge", "bridgeCancel");
         this.msgRouter = CefMessageRouter.create(config);
@@ -70,6 +101,32 @@ public class JSBridge {
         } catch (Exception e) {
             log.error("Failed to post message to JS", e);
         }
+    }
+
+    public CompletableFuture<Object> evaluateJavaScript(String jsCode) {
+        CompletableFuture<Object> future = new CompletableFuture<>();
+        String callbackId = java.util.UUID.randomUUID().toString();
+        pendingEvaluations.put(callbackId, future);
+
+        String wrappedCode = "(async function() {\n" +
+                "    try {\n" +
+                "        let __res = await (async function() {\n" +
+                "            " + jsCode + "\n" +
+                "        })();\n" +
+                "        window.bridge({request: JSON.stringify({event: '__bridge_eval_success', data: {id: '" + callbackId + "', result: __res}}), onSuccess: function(){}, onFailure: function(){}});\n" +
+                "    } catch(e) {\n" +
+                "        window.bridge({request: JSON.stringify({event: '__bridge_eval_error', data: {id: '" + callbackId + "', error: String(e)}}), onSuccess: function(){}, onFailure: function(){}});\n" +
+                "    }\n" +
+                "})();";
+
+        CefBrowser cefBrowser = (CefBrowser) javaBrowser.getNativeBrowser();
+        if (cefBrowser != null) {
+            cefBrowser.executeJavaScript(wrappedCode, cefBrowser.getURL(), 0);
+        } else {
+            future.completeExceptionally(new Exception("Native browser not available"));
+        }
+
+        return future;
     }
 
     public void dispose() {

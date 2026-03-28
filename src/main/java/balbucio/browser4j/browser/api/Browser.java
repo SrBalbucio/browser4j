@@ -22,6 +22,7 @@ public interface Browser {
     balbucio.browser4j.security.api.SecurityModule security();
     balbucio.browser4j.devtools.DevToolsModule devtools();
     balbucio.browser4j.network.cookies.CookieManager cookies();
+    balbucio.browser4j.storage.api.StorageModule storage();
     
     java.util.concurrent.CompletableFuture<org.jsoup.nodes.Document> getDOM();
     

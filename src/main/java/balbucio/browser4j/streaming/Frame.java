@@ -1,5 +1,8 @@
 package balbucio.browser4j.streaming;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class Frame {

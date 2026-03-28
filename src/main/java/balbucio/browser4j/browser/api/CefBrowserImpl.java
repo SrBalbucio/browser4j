@@ -39,6 +39,7 @@ import balbucio.browser4j.security.profile.FingerprintInjector;
 
 import java.util.ArrayList;
 import java.util.List;
+import balbucio.browser4j.storage.api.StorageModuleImpl;
 
 public class CefBrowserImpl implements Browser {
     private final CefBrowser cefBrowser;
@@ -52,6 +53,7 @@ public class CefBrowserImpl implements Browser {
     private final SecurityModuleImpl securityModule;
     private final CookieManager cookieManager;
     private final BrowserOptions options;
+    private final StorageModuleImpl storageModule;
     private Consumer<String> consoleMessageHandler;
 
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -87,6 +89,7 @@ public class CefBrowserImpl implements Browser {
         this.metricsTracker = new MetricsTracker();
         this.securityModule = new SecurityModuleImpl();
         this.networkHandler = new NetworkHandlerImpl(this.cefClient, this.metricsTracker, this.securityModule);
+        this.storageModule = new StorageModuleImpl(this.jsBridge);
 
         this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
         this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
@@ -279,6 +282,11 @@ public class CefBrowserImpl implements Browser {
     @Override
     public CookieManager cookies() {
         return cookieManager;
+    }
+
+    @Override
+    public balbucio.browser4j.storage.api.StorageModule storage() {
+        return storageModule;
     }
 
     @Override
