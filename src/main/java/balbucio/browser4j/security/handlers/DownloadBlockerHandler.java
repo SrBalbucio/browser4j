@@ -8,8 +8,14 @@ import org.cef.handler.CefDownloadHandlerAdapter;
 
 public class DownloadBlockerHandler extends CefDownloadHandlerAdapter {
     @Override
-    public void onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName, CefBeforeDownloadCallback callback) {
+    public void onDownloadUpdated(CefBrowser browser, CefDownloadItem downloadItem, CefDownloadItemCallback callback) {
+        super.onDownloadUpdated(browser, downloadItem, callback);
+    }
+
+    @Override
+    public boolean onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName, CefBeforeDownloadCallback callback) {
         // Block all downloads by default for MVP Phase 3
         callback.Continue(suggestedName, false);
+        return super.onBeforeDownload(browser, downloadItem, suggestedName, callback);
     }
 }

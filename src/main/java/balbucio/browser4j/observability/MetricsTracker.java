@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MetricsTracker {
     private final ConcurrentHashMap<Long, Long> requestStartTimes = new ConcurrentHashMap<>();
     private final AtomicLong totalRequests = new AtomicLong(0);
-    
+
     private final AtomicLong framesRendered = new AtomicLong(0);
     private long lastFpsTime = System.currentTimeMillis();
     private volatile int currentFps = 0;
@@ -32,7 +32,8 @@ public class MetricsTracker {
                 if (config != null && config.getMetricHandler() != null) {
                     config.getMetricHandler().accept(new BrowserMetric(url, duration, statusCode, bytesLoaded));
                 }
-            } catch (IllegalStateException e) { }
+            } catch (IllegalStateException e) {
+            }
         }
     }
 
@@ -52,7 +53,7 @@ public class MetricsTracker {
     public long getTotalRequests() {
         return totalRequests.get();
     }
-    
+
     public String export() {
         try {
             ObjectNode root = mapper.createObjectNode();
