@@ -35,6 +35,11 @@ public class BrowserProcessManager {
                 // Add default flags for reliability in headless or critical desktop apps
                 command_line.appendSwitch("disable-web-security"); // Depending on use case
                 command_line.appendSwitch("ignore-certificate-errors");
+
+                if (config.getRemoteDebuggingPort() > 0) {
+                    command_line.appendSwitchWithValue("remote-debugging-port", String.valueOf(config.getRemoteDebuggingPort()));
+                }
+
                 
                 log.debug("Chromium flags set to: {}", command_line.getCommandLineString());
             }

@@ -20,6 +20,9 @@ public interface Browser {
     
     balbucio.browser4j.network.api.NetworkModule network();
     balbucio.browser4j.security.api.SecurityModule security();
+    balbucio.browser4j.devtools.DevToolsModule devtools();
+    
+    void onConsoleMessage(java.util.function.Consumer<String> handler);
     
     // Internal use for bridge registration, can be downcasted or extended
     Object getNativeBrowser();

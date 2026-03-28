@@ -14,7 +14,12 @@ import balbucio.browser4j.ui.abstraction.BrowserView;
 import balbucio.browser4j.ui.swing.SwingBrowserView;
 import java.nio.ByteBuffer;
 import java.awt.Rectangle;
+import java.awt.Window;
+import javax.swing.SwingUtilities;
+import java.util.function.Consumer;
+import org.cef.CefSettings;
 import org.cef.handler.CefRenderHandlerAdapter;
+import org.cef.handler.ErrorCode;
 import balbucio.browser4j.browser.events.FrameCaptureListener;
 import balbucio.browser4j.browser.input.InputController;
 import balbucio.browser4j.core.runtime.BrowserRuntime;
@@ -24,6 +29,8 @@ import balbucio.browser4j.security.handlers.DownloadBlockerHandler;
 import balbucio.browser4j.observability.MetricsTracker;
 import balbucio.browser4j.network.api.NetworkModule;
 import balbucio.browser4j.security.api.SecurityModule;
+import balbucio.browser4j.devtools.DevToolsModule;
+import balbucio.browser4j.streaming.Frame;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +45,28 @@ public class CefBrowserImpl implements Browser {
     private final InputController inputController;
     private final MetricsTracker metricsTracker;
     private final SecurityModuleImpl securityModule;
+    private Consumer<String> consoleMessageHandler;
+    
+    private final DevToolsModule devToolsModule = new DevToolsModule() {
+        private CefBrowser devToolsBrowser;
+
+        @Override
+        public void open() {
+            SwingUtilities.invokeLater(() -> {
+                if (cefBrowser != null) {
+                    Window w = new Window(null); // Headless hidden window or actual mapping
+                    devToolsBrowser = cefBrowser.getDevTools().createBrowser(cefClient, false, false, null);
+                }
+            });
+        }
+
+        @Override
+        public void close() {
+            if (devToolsBrowser != null) {
+                devToolsBrowser.close(true);
+            }
+        }
+    };
 
     public CefBrowserImpl(CefApp cefApp) {
         this.listeners = new ArrayList<>();
@@ -103,13 +132,23 @@ public class CefBrowserImpl implements Browser {
                     }
                 }
             }
+
+            @Override
+            public boolean onConsoleMessage(CefBrowser browser, CefSettings.LogSeverity level, String message, String source, int line) {
+                if (consoleMessageHandler != null) {
+                    consoleMessageHandler.accept(String.format("[%s] %s:%d %s", level.name(), source, line, message));
+                }
+                return false;
+            }
         });
 
         client.addRenderHandler(new CefRenderHandlerAdapter() {
             @Override
             public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height) {
+                metricsTracker.markFrame();
+                Frame frame = new Frame(buffer, width, height, System.currentTimeMillis());
                 for (FrameCaptureListener listener : frameListeners) {
-                    listener.onFrame(buffer, width, height);
+                    listener.onFrame(frame);
                 }
             }
         });
@@ -187,6 +226,16 @@ public class CefBrowserImpl implements Browser {
     @Override
     public SecurityModule security() {
         return securityModule;
+    }
+
+    @Override
+    public balbucio.browser4j.devtools.DevToolsModule devtools() {
+        return devToolsModule;
+    }
+
+    @Override
+    public void onConsoleMessage(Consumer<String> handler) {
+        this.consoleMessageHandler = handler;
     }
 
     @Override

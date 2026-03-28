@@ -15,6 +15,7 @@ public class BrowserRuntimeConfiguration {
     private final boolean enableNetworkInterception;
     private final boolean enableSecurity;
     private final Consumer<BrowserMetric> metricHandler;
+    private final int remoteDebuggingPort;
 
     private BrowserRuntimeConfiguration(Builder builder) {
         this.cachePath = builder.cachePath;
@@ -26,6 +27,7 @@ public class BrowserRuntimeConfiguration {
         this.enableNetworkInterception = builder.enableNetworkInterception;
         this.enableSecurity = builder.enableSecurity;
         this.metricHandler = builder.metricHandler;
+        this.remoteDebuggingPort = builder.remoteDebuggingPort;
     }
 
     public String getCachePath() { return cachePath; }
@@ -37,6 +39,7 @@ public class BrowserRuntimeConfiguration {
     public boolean isEnableNetworkInterception() { return enableNetworkInterception; }
     public boolean isEnableSecurity() { return enableSecurity; }
     public Consumer<BrowserMetric> getMetricHandler() { return metricHandler; }
+    public int getRemoteDebuggingPort() { return remoteDebuggingPort; }
 
     public static Builder builder() {
         return new Builder();
@@ -52,6 +55,7 @@ public class BrowserRuntimeConfiguration {
         private boolean enableNetworkInterception = true;
         private boolean enableSecurity = true;
         private Consumer<BrowserMetric> metricHandler = null;
+        private int remoteDebuggingPort = 9222;
 
         public Builder cachePath(String cachePath) {
             this.cachePath = cachePath;
@@ -95,6 +99,11 @@ public class BrowserRuntimeConfiguration {
 
         public Builder metricHandler(Consumer<BrowserMetric> metricHandler) {
             this.metricHandler = metricHandler;
+            return this;
+        }
+
+        public Builder remoteDebuggingPort(int remoteDebuggingPort) {
+            this.remoteDebuggingPort = remoteDebuggingPort;
             return this;
         }
 

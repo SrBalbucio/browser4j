@@ -1,7 +1,7 @@
 package balbucio.browser4j.browser.events;
 
-import java.nio.ByteBuffer;
+import balbucio.browser4j.streaming.Frame;
 
 public interface FrameCaptureListener {
-    void onFrame(ByteBuffer buffer, int width, int height);
+    void onFrame(Frame frame);
 }
