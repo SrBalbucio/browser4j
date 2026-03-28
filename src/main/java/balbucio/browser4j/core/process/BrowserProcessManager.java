@@ -54,7 +54,7 @@ public class BrowserProcessManager {
                     }
                 }
                 
-                log.debug("Chromium flags set to: {}", command_line.getCommandLineString());
+                log.debug("Chromium flags set to: {}", command_line.getArguments().toString());
             }
         });
     }
