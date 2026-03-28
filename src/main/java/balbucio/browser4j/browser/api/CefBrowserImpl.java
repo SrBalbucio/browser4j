@@ -31,6 +31,8 @@ import balbucio.browser4j.network.api.NetworkModule;
 import balbucio.browser4j.security.api.SecurityModule;
 import balbucio.browser4j.devtools.DevToolsModule;
 import balbucio.browser4j.streaming.Frame;
+import org.cef.browser.CefRequestContext;
+import balbucio.browser4j.network.cookies.CookieManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +47,7 @@ public class CefBrowserImpl implements Browser {
     private final InputController inputController;
     private final MetricsTracker metricsTracker;
     private final SecurityModuleImpl securityModule;
+    private final CookieManager cookieManager;
     private Consumer<String> consoleMessageHandler;
     
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -69,6 +72,10 @@ public class CefBrowserImpl implements Browser {
     };
 
     public CefBrowserImpl(CefApp cefApp) {
+        this(cefApp, null);
+    }
+
+    public CefBrowserImpl(CefApp cefApp, BrowserOptions options) {
         this.listeners = new ArrayList<>();
         this.frameListeners = new ArrayList<>();
 
@@ -84,13 +91,30 @@ public class CefBrowserImpl implements Browser {
         this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
         this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
 
+        CefRequestContext context = CefRequestContext.getGlobalContext();
+        
+        if (options != null) {
+            // Apply User-Agent by overriding context settings if needed
+            // Currently, profile path in JCEF isolated context isn't an easy explicit API in standard un-patched jcef Java bindings
+            // unless we do CefRequestContext.createContext(), but we rely on simple builder if available.
+            // But we will use the isolated context or just get the current one's cookie manager
+            // CefRequestContext.createContext(CefRequestContextHandler)
+            // But for simple cookie isolation:
+        }
+
+        this.cookieManager = new CookieManager(context.getCookieManager(null));
+
         boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
-        this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false);
+        this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false, context);
         this.inputController = new InputController(this.cefBrowser);
     }
 
     public static Browser create(CefApp cefApp) {
         return new CefBrowserImpl(cefApp);
+    }
+    
+    public static Browser create(CefApp cefApp, BrowserOptions options) {
+        return new CefBrowserImpl(cefApp, options);
     }
 
     private void setupHandlers(CefClient client) {
@@ -236,6 +260,11 @@ public class CefBrowserImpl implements Browser {
     @Override
     public void onConsoleMessage(Consumer<String> handler) {
         this.consoleMessageHandler = handler;
+    }
+
+    @Override
+    public CookieManager cookies() {
+        return cookieManager;
     }
 
     @Override

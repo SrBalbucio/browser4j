@@ -16,6 +16,8 @@ public class BrowserRuntimeConfiguration {
     private final boolean enableSecurity;
     private final Consumer<BrowserMetric> metricHandler;
     private final int remoteDebuggingPort;
+    private final String userAgent;
+    private final balbucio.browser4j.network.proxy.ProxyConfig proxy;
 
     private BrowserRuntimeConfiguration(Builder builder) {
         this.cachePath = builder.cachePath;
@@ -28,6 +30,8 @@ public class BrowserRuntimeConfiguration {
         this.enableSecurity = builder.enableSecurity;
         this.metricHandler = builder.metricHandler;
         this.remoteDebuggingPort = builder.remoteDebuggingPort;
+        this.userAgent = builder.userAgent;
+        this.proxy = builder.proxy;
     }
 
     public String getCachePath() { return cachePath; }
@@ -40,6 +44,8 @@ public class BrowserRuntimeConfiguration {
     public boolean isEnableSecurity() { return enableSecurity; }
     public Consumer<BrowserMetric> getMetricHandler() { return metricHandler; }
     public int getRemoteDebuggingPort() { return remoteDebuggingPort; }
+    public String getUserAgent() { return userAgent; }
+    public balbucio.browser4j.network.proxy.ProxyConfig getProxy() { return proxy; }
 
     public static Builder builder() {
         return new Builder();
@@ -56,6 +62,8 @@ public class BrowserRuntimeConfiguration {
         private boolean enableSecurity = true;
         private Consumer<BrowserMetric> metricHandler = null;
         private int remoteDebuggingPort = 9222;
+        private String userAgent = null;
+        private balbucio.browser4j.network.proxy.ProxyConfig proxy = null;
 
         public Builder cachePath(String cachePath) {
             this.cachePath = cachePath;
@@ -104,6 +112,16 @@ public class BrowserRuntimeConfiguration {
 
         public Builder remoteDebuggingPort(int remoteDebuggingPort) {
             this.remoteDebuggingPort = remoteDebuggingPort;
+            return this;
+        }
+
+        public Builder userAgent(String userAgent) {
+            this.userAgent = userAgent;
+            return this;
+        }
+
+        public Builder proxy(balbucio.browser4j.network.proxy.ProxyConfig proxy) {
+            this.proxy = proxy;
             return this;
         }
 

@@ -40,6 +40,19 @@ public class BrowserProcessManager {
                     command_line.appendSwitchWithValue("remote-debugging-port", String.valueOf(config.getRemoteDebuggingPort()));
                 }
 
+                if (config.getUserAgent() != null && !config.getUserAgent().isEmpty()) {
+                    command_line.appendSwitchWithValue("user-agent", config.getUserAgent());
+                }
+
+                if (config.getProxy() != null) {
+                    String proxyServer = config.getProxy().getServerString();
+                    if (proxyServer != null) {
+                        command_line.appendSwitchWithValue("proxy-server", proxyServer);
+                    }
+                    if (config.getProxy().getBypassList() != null) {
+                        command_line.appendSwitchWithValue("proxy-bypass-list", config.getProxy().getBypassList());
+                    }
+                }
                 
                 log.debug("Chromium flags set to: {}", command_line.getCommandLineString());
             }
