@@ -84,3 +84,5 @@ BrowserRuntime.shutdown();
 * [Criando e gerenciando o Browser →](02-browser-instance.md)
 * [Lidando com Eventos, API de Rede, Cookies e Segurança →](03-events-network.md)
 * [Proxy Pool e Configuração de Fingerprint/Sessões Consistentes →](04-proxy-pool.md)
+* [Gerenciamento de Multiplas Abas →](05-tab-manager.md)
+* [Extração de HTML e Parsing Jsoup →](06-html-parsing.md)

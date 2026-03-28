@@ -23,6 +23,8 @@ public interface Browser {
     balbucio.browser4j.devtools.DevToolsModule devtools();
     balbucio.browser4j.network.cookies.CookieManager cookies();
     
+    java.util.concurrent.CompletableFuture<org.jsoup.nodes.Document> getDOM();
+    
     void onConsoleMessage(java.util.function.Consumer<String> handler);
     
     // Internal use for bridge registration, can be downcasted or extended

@@ -16,12 +16,12 @@ import balbucio.browser4j.ui.swing.SwingBrowserView;
 
 import java.nio.ByteBuffer;
 import java.awt.Rectangle;
-import java.awt.Window;
+
 import javax.swing.SwingUtilities;
 import java.util.function.Consumer;
 
 import org.cef.CefSettings;
-import org.cef.handler.CefRenderHandlerAdapter;
+
 import balbucio.browser4j.browser.events.FrameCaptureListener;
 import balbucio.browser4j.browser.input.InputController;
 import balbucio.browser4j.core.runtime.BrowserRuntime;
@@ -279,6 +279,20 @@ public class CefBrowserImpl implements Browser {
     @Override
     public CookieManager cookies() {
         return cookieManager;
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<org.jsoup.nodes.Document> getDOM() {
+        java.util.concurrent.CompletableFuture<org.jsoup.nodes.Document> future = new java.util.concurrent.CompletableFuture<>();
+        cefBrowser.getSource(string -> {
+            try {
+                org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(string);
+                future.complete(doc);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
     }
 
     @Override
