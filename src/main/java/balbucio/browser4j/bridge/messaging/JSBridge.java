@@ -5,11 +5,9 @@ import balbucio.browser4j.bridge.serialization.JsonSerializer;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
+import org.cef.browser.CefMessageRouter;
 import org.cef.callback.CefQueryCallback;
 import org.cef.handler.CefMessageRouterHandlerAdapter;
-import org.cef.handler.CefMessageRouterConfig;
-import org.cef.handler.CefMessageRouterConfig;
-import org.cef.CefMessageRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +25,7 @@ public class JSBridge {
         this.javaBrowser = javaBrowser;
         
         // Define default window.bridge bindings
-        CefMessageRouterConfig config = new CefMessageRouterConfig("bridge", "bridgeCancel");
+        CefMessageRouter.CefMessageRouterConfig config = new CefMessageRouter.CefMessageRouterConfig("bridge", "bridgeCancel");
         this.msgRouter = CefMessageRouter.create(config);
         
         msgRouter.addHandler(new CefMessageRouterHandlerAdapter() {

@@ -1,25 +1,29 @@
 package balbucio.browser4j.browser.api;
 
+import balbucio.browser4j.browser.event.CefOnPaintHandlerAdapter;
 import balbucio.browser4j.browser.events.BrowserEventListener;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
+import org.cef.browser.CefBrowserOsrWithHandler;
+import org.cef.browser.CefRendering;
 import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefLoadHandlerAdapter;
+import org.cef.network.CefCookieManager;
 import org.cef.network.CefRequest;
 import balbucio.browser4j.bridge.messaging.JSBridge;
 import balbucio.browser4j.network.interception.NetworkHandlerImpl;
-import balbucio.browser4j.network.interception.RequestInterceptor;
 import balbucio.browser4j.ui.abstraction.BrowserView;
 import balbucio.browser4j.ui.swing.SwingBrowserView;
+
 import java.nio.ByteBuffer;
 import java.awt.Rectangle;
 import java.awt.Window;
 import javax.swing.SwingUtilities;
 import java.util.function.Consumer;
+
 import org.cef.CefSettings;
 import org.cef.handler.CefRenderHandlerAdapter;
-import org.cef.handler.ErrorCode;
 import balbucio.browser4j.browser.events.FrameCaptureListener;
 import balbucio.browser4j.browser.input.InputController;
 import balbucio.browser4j.core.runtime.BrowserRuntime;
@@ -49,25 +53,20 @@ public class CefBrowserImpl implements Browser {
     private final SecurityModuleImpl securityModule;
     private final CookieManager cookieManager;
     private Consumer<String> consoleMessageHandler;
-    
-    private final DevToolsModule devToolsModule = new DevToolsModule() {
-        private CefBrowser devToolsBrowser;
 
+    private final DevToolsModule devToolsModule = new DevToolsModule() {
         @Override
         public void open() {
             SwingUtilities.invokeLater(() -> {
                 if (cefBrowser != null) {
-                    Window w = new Window(null); // Headless hidden window or actual mapping
-                    devToolsBrowser = cefBrowser.getDevTools().createBrowser(cefClient, false, false, null);
+                    cefBrowser.openDevTools();
                 }
             });
         }
 
         @Override
         public void close() {
-            if (devToolsBrowser != null) {
-                devToolsBrowser.close(true);
-            }
+            cefBrowser.closeDevTools();
         }
     };
 
@@ -92,7 +91,10 @@ public class CefBrowserImpl implements Browser {
         this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
 
         CefRequestContext context = CefRequestContext.getGlobalContext();
-        
+
+        // verificar se isso não é melhor fazer de forma persistente e individual
+        CefCookieManager cookieManager = CefCookieManager.getGlobalManager();
+
         if (options != null) {
             // Apply User-Agent by overriding context settings if needed
             // Currently, profile path in JCEF isolated context isn't an easy explicit API in standard un-patched jcef Java bindings
@@ -102,7 +104,7 @@ public class CefBrowserImpl implements Browser {
             // But for simple cookie isolation:
         }
 
-        this.cookieManager = new CookieManager(context.getCookieManager(null));
+        this.cookieManager = new CookieManager(cookieManager);
 
         boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
         this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false, context);
@@ -112,7 +114,7 @@ public class CefBrowserImpl implements Browser {
     public static Browser create(CefApp cefApp) {
         return new CefBrowserImpl(cefApp);
     }
-    
+
     public static Browser create(CefApp cefApp, BrowserOptions options) {
         return new CefBrowserImpl(cefApp, options);
     }
@@ -166,7 +168,7 @@ public class CefBrowserImpl implements Browser {
             }
         });
 
-        client.addRenderHandler(new CefRenderHandlerAdapter() {
+        client.addOnPaintListener(new CefOnPaintHandlerAdapter() {
             @Override
             public void onPaint(CefBrowser browser, boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height) {
                 metricsTracker.markFrame();
@@ -226,7 +228,7 @@ public class CefBrowserImpl implements Browser {
     public void removeEventListener(BrowserEventListener listener) {
         listeners.remove(listener);
     }
-    
+
     @Override
     public void addFrameCaptureListener(FrameCaptureListener listener) {
         frameListeners.add(listener);
