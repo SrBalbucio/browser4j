@@ -1,9 +1,19 @@
 package balbucio.browser4j.network.api;
 
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Getter
+@Setter
 public class Response {
-    private final int statusCode;
-    private final String contentType;
-    private final byte[] body;
+
+    private int statusCode;
+    private String contentType;
+    private byte[] body;
+    private Map<String, String> headers = new HashMap<>();
 
     private Response(int statusCode, String contentType, byte[] body) {
         this.statusCode = statusCode;
@@ -15,7 +25,4 @@ public class Response {
         return new Response(statusCode, contentType, body);
     }
 
-    public int getStatusCode() { return statusCode; }
-    public String getContentType() { return contentType; }
-    public byte[] getBody() { return body; }
 }

@@ -21,15 +21,12 @@ public class CookieManager {
         CompletableFuture<List<CefCookie>> future = new CompletableFuture<>();
         List<CefCookie> cookies = new ArrayList<>();
         
-        boolean ok = cefManager.visitAllCookies(new org.cef.callback.CefCookieVisitor() {
-            @Override
-            public boolean visit(CefCookie cookie, int count, int total, org.cef.misc.BoolRef deleteObject) {
-                cookies.add(cookie);
-                if (count + 1 == total) {
-                    future.complete(cookies);
-                }
-                return true;
+        boolean ok = cefManager.visitAllCookies((cookie, count, total, deleteObject) -> {
+            cookies.add(cookie);
+            if (count + 1 == total) {
+                future.complete(cookies);
             }
+            return true;
         });
         
         if (!ok) {
@@ -42,15 +39,12 @@ public class CookieManager {
         CompletableFuture<List<CefCookie>> future = new CompletableFuture<>();
         List<CefCookie> cookies = new ArrayList<>();
         
-        boolean ok = cefManager.visitUrlCookies(url, true, new org.cef.callback.CefCookieVisitor() {
-            @Override
-            public boolean visit(CefCookie cookie, int count, int total, org.cef.misc.BoolRef deleteObject) {
-                cookies.add(cookie);
-                if (count + 1 == total) {
-                    future.complete(cookies);
-                }
-                return true;
+        boolean ok = cefManager.visitUrlCookies(url, true, (cookie, count, total, deleteObject) -> {
+            cookies.add(cookie);
+            if (count + 1 == total) {
+                future.complete(cookies);
             }
+            return true;
         });
 
         if (!ok) {

@@ -103,29 +103,34 @@ public class NetworkHandlerImpl implements NetworkModule {
                     }
 
                     @Override
-                    public CefResponseFilter getResourceResponseFilter(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response) {
-                        if (responseHandlers.isEmpty()) return null;
-                        
-                        return new CefResponseFilter() {
-                            @Override
-                            public boolean initFilter() { return true; }
-
-                            @Override
-                            public FilterStatus filter(ByteBuffer data_in, int data_in_size, IntRef data_in_read, ByteBuffer data_out, int data_out_size, IntRef data_out_written) {
-                                if (data_in_size == 0) return FilterStatus.RESPONSE_FILTER_DONE;
-                                byte[] chunk = new byte[data_in_size];
-                                data_in.get(chunk);
-                                for (ResponseHandler handler : responseHandlers) {
-                                    handler.handle(request.getURL(), response.getStatus(), response.getMimeType(), chunk);
-                                }
-                                int writeSize = Math.min(data_in_size, data_out_size);
-                                data_out.put(chunk, 0, writeSize);
-                                data_in_read.set(writeSize);
-                                data_out_written.set(writeSize);
-                                return writeSize < data_in_size ? FilterStatus.RESPONSE_FILTER_NEED_MORE_DATA : FilterStatus.RESPONSE_FILTER_DONE;
-                            }
-                        };
+                    public CefCookieAccessFilter getCookieAccessFilter(CefBrowser browser, CefFrame frame, CefRequest request) {
+                        return super.getCookieAccessFilter(browser, frame, request);
                     }
+
+//                    @Override
+//                    public CefResponseFilter getResourceResponseFilter(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response) {
+//                        if (responseHandlers.isEmpty()) return null;
+//
+//                        return new CefResponseFilter() {
+//                            @Override
+//                            public boolean initFilter() { return true; }
+//
+//                            @Override
+//                            public FilterStatus filter(ByteBuffer data_in, int data_in_size, IntRef data_in_read, ByteBuffer data_out, int data_out_size, IntRef data_out_written) {
+//                                if (data_in_size == 0) return FilterStatus.RESPONSE_FILTER_DONE;
+//                                byte[] chunk = new byte[data_in_size];
+//                                data_in.get(chunk);
+//                                for (ResponseHandler handler : responseHandlers) {
+//                                    handler.handle(request.getURL(), response.getStatus(), response.getMimeType(), chunk);
+//                                }
+//                                int writeSize = Math.min(data_in_size, data_out_size);
+//                                data_out.put(chunk, 0, writeSize);
+//                                data_in_read.set(writeSize);
+//                                data_out_written.set(writeSize);
+//                                return writeSize < data_in_size ? FilterStatus.RESPONSE_FILTER_NEED_MORE_DATA : FilterStatus.RESPONSE_FILTER_DONE;
+//                            }
+//                        };
+//                    }
 
                     @Override
                     public void onResourceLoadComplete(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response, CefURLRequest.Status status, long receivedContentLength) {

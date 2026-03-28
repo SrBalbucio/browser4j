@@ -1,9 +1,8 @@
 package balbucio.browser4j.network.protocol;
 
-import balbucio.browser4j.network.interception.Response;
+import balbucio.browser4j.network.api.Response;
 import org.cef.CefApp;
 import org.cef.callback.CefSchemeHandlerFactory;
-import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefResourceHandler;
 import org.cef.network.CefRequest;
 import org.cef.browser.CefBrowser;
