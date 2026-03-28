@@ -5,4 +5,5 @@ public interface BrowserEventListener {
     void onLoadEnd(String url, int httpStatusCode);
     void onLoadError(String url, int errorCode, String errorText);
     void onNavigation(String url);
+    void onTitleChange(String title);
 }

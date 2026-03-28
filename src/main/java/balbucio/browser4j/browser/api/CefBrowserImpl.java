@@ -165,6 +165,13 @@ public class CefBrowserImpl implements Browser {
             }
 
             @Override
+            public void onTitleChange(CefBrowser browser, String title) {
+                for (BrowserEventListener listener : listeners) {
+                    listener.onTitleChange(title);
+                }
+            }
+
+            @Override
             public boolean onConsoleMessage(CefBrowser browser, CefSettings.LogSeverity level, String message, String source, int line) {
                 if (consoleMessageHandler != null) {
                     consoleMessageHandler.accept(String.format("[%s] %s:%d %s", level.name(), source, line, message));
