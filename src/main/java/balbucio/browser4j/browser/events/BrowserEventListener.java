@@ -6,4 +6,6 @@ public interface BrowserEventListener {
     void onLoadError(String url, int errorCode, String errorText);
     void onNavigation(String url);
     void onTitleChange(String title);
+    
+    default void onDRMDetected(String url) {}
 }

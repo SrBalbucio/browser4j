@@ -22,6 +22,7 @@ public class Tab {
             public void onLoadStart(String url) {
                 state.setLoading(true);
                 state.setUrl(url);
+                state.setDrmProtected(false);
             }
 
             @Override
@@ -43,6 +44,11 @@ public class Tab {
             @Override
             public void onTitleChange(String title) {
                 state.setTitle(title);
+            }
+
+            @Override
+            public void onDRMDetected(String url) {
+                state.setDrmProtected(true);
             }
         });
     }

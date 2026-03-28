@@ -36,6 +36,7 @@ import balbucio.browser4j.streaming.Frame;
 import org.cef.browser.CefRequestContext;
 import balbucio.browser4j.network.cookies.CookieManager;
 import balbucio.browser4j.security.profile.FingerprintInjector;
+import balbucio.browser4j.security.drm.DRMInjector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,6 +114,14 @@ public class CefBrowserImpl implements Browser {
         boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
         this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false, context);
         this.inputController = new InputController(this.cefBrowser);
+
+        this.jsBridge.addHandler((event, data) -> {
+            if ("__drm_detected".equals(event)) {
+                for (BrowserEventListener listener : listeners) {
+                    listener.onDRMDetected(this.cefBrowser.getURL());
+                }
+            }
+        });
     }
 
     public static Browser create(CefApp cefApp) {
@@ -131,6 +140,9 @@ public class CefBrowserImpl implements Browser {
                     if (options != null && options.getSession() != null && options.getSession().getProfile() != null && options.getSession().getProfile().getFingerprint() != null) {
                         FingerprintInjector.inject(browser, options.getSession().getProfile().getFingerprint());
                     }
+
+                    // Inject DRM hooks
+                    browser.executeJavaScript(DRMInjector.INJECTION_SCRIPT, browser.getURL(), 0);
 
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadStart(frame.getURL());
@@ -287,6 +299,12 @@ public class CefBrowserImpl implements Browser {
     @Override
     public balbucio.browser4j.storage.api.StorageModule storage() {
         return storageModule;
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<Boolean> isDRMProtected() {
+        return jsBridge.evaluateJavaScript(DRMInjector.EVALUATION_SCRIPT)
+                .thenApply(res -> Boolean.TRUE.equals(res));
     }
 
     @Override

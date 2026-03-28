@@ -25,6 +25,7 @@ public interface Browser {
     balbucio.browser4j.storage.api.StorageModule storage();
     
     java.util.concurrent.CompletableFuture<org.jsoup.nodes.Document> getDOM();
+    java.util.concurrent.CompletableFuture<Boolean> isDRMProtected();
     
     void onConsoleMessage(java.util.function.Consumer<String> handler);
     

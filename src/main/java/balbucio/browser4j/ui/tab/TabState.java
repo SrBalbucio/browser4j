@@ -6,6 +6,7 @@ public class TabState {
     private boolean loading = false;
     private long lastAccessedAt = System.currentTimeMillis();
     private boolean incognito = false;
+    private boolean drmProtected = false;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -21,4 +22,7 @@ public class TabState {
     
     public boolean isIncognito() { return incognito; }
     public void setIncognito(boolean incognito) { this.incognito = incognito; }
+    
+    public boolean isDrmProtected() { return drmProtected; }
+    public void setDrmProtected(boolean drmProtected) { this.drmProtected = drmProtected; }
 }
