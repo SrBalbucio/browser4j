@@ -58,6 +58,10 @@ Você não precisa pedir para o `Browser.getNative()` descobrir onde está naveg
 String titulo = tab1.getState().getTitle();
 boolean estaCarregando = tab1.getState().isLoading();
 String urlAtual = tab1.getState().getUrl();
+
+// Novos Recursos Avançados
+boolean modoAnonimo = tab1.getState().isIncognito();
+boolean conteudoIsProtectedByDRM = tab1.getState().isDrmProtected();
 ```
 
 ---
@@ -78,7 +82,21 @@ tabManager.closeTab(tab1.getId());
 
 ---
 
-## 4. Gestor "Headless" (Sem UI atrelado)
+## 4. Modo Incognito (Limpeza em Massa)
+
+Como visto na seção inicial, você pode invocar o Tab Manager passando sessões instanciadas por `Session.createIncognito(...)`. Abas com essa propriedade não gravam disco nem cookies e são isoladas nativamente pelo JCEF!
+
+Para descartá-las todas de uma vez de forma segura:
+
+```java
+// Isso vai fechar todas as abas marcadas com o .isIncognito() e vai 
+// instantaneamente limpar o CefRequestContext temporário da memória de fundo:
+tabManager.closeAllIncognitoTabs();
+```
+
+---
+
+## 5. Gestor "Headless" (Sem UI atrelado)
 Se você não está usando Swing ou quer gerenciar por si próprio onde a aba entra (por exemplo compondo painéis de X/Y de quadros):
 
 ```java

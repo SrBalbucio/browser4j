@@ -62,7 +62,7 @@ browser.addFrameCaptureListener(new FrameCaptureListener() {
 
 ### Módulos Integrados e Gerência Persistente
 
-Em tempo de execução sob abas ativas, as abas oferecem os métodos estendidos do projeto do Browser4j. Retorne seus controladores por `browser.network()`, `browser.security()`, `browser.cookies()`, e `browser.devtools()`.
+Em tempo de execução sob abas ativas, as abas oferecem os métodos estendidos do projeto do Browser4j. Retorne seus controladores por `browser.network()`, `browser.security()`, `browser.cookies()`, `browser.storage()`, e `browser.devtools()`.
 
 
 #### `NetworkModule` (Controle de Rede)
@@ -134,3 +134,42 @@ browser.devtools().open();
 // Fecha o painel
 // browser.devtools().close();
 ```
+
+---
+
+#### `StorageModule` (Armazenamento Web Local e Sessão)
+Gerencie os dados e chaves salvas em `localStorage` e `sessionStorage` diretamente por Java sob uma integração robusta de Promises e bridge JS assíncrono:
+
+```java
+import balbucio.browser4j.storage.api.StorageModule;
+
+StorageModule storage = browser.storage();
+
+// Atribui valores ao cache de sessão em aba síncrona/assíncrona:
+storage.getSessionStorage().setItem("chave-secreta", "token-de-acesso");
+
+// Lê valores de forma assíncrona recebendo na mesma execução pelo JS:
+storage.getLocalStorage().getItem("tema").thenAccept(temaDefinido -> {
+    System.out.println("O tema local do site é: " + temaDefinido);
+});
+
+// Limpar conteúdo
+// storage.getLocalStorage().clear();
+```
+
+---
+
+### Verificação de Proteção DRM (Widevine)
+
+Se o aplicativo requer validação contra gravações de tela pirata ou detecta se o vídeo que está rodando está criptografado (Streaming), o `Browser4J` ativa Hooks e listeners *nativamente no processo* da página pra ter altíssima precisão:
+
+```java
+// Pode ser invocado a qualquer momento e retorna uma promessa validando o contexto EME e o DOM.
+browser.isDRMProtected().thenAccept(temDRM -> {
+    if (temDRM) {
+        System.out.println("Atenção! Esta página ativou a extensão DRM (MediaKeys/Encrypted)!");
+    }
+});
+```
+
+Além disso, a sua biblioteca de eventos (`BrowserEventListener`) agora entrega o gatilho assíncrono padrão **`onDRMDetected(String url)`** para te notificar passivamente toda vez que o gatilho explodir!
