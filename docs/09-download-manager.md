@@ -102,7 +102,7 @@ Cada download é representado por um snapshot imutável contendo:
 
 ## Histórico e Persistência
 
-Os downloads são persistidos automaticamente em um arquivo `history.json` dentro do diretório do perfil correspondente.
+Os downloads são persistidos automaticamente em um banco de dados `history.db` dentro do diretório do perfil correspondente.
 
 - **Isolamento**: Downloads de um perfil nunca são visíveis para outro.
 - **Recuperação**: O histórico é carregado ao iniciar o browser.

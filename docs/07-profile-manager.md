@@ -21,7 +21,7 @@ globalmente), a persistência funciona em duas camadas:
 |-------------------------|-------------------------------------|-------------------------------------------------------------|
 | Dados do Chromium       | `CefSettings.cache_path` (global)   | Cookies, localStorage, cache ficam no disco do perfil ativo |
 | Preferências de Usuário | `CefRequestContext.setPreference()` | Idioma, zoom, tema aplicados em cada carregamento           |
-| Configuração Salva      | `profile.json` (Gson)               | Preferências sobrevivem reinicializações da JVM             |
+| Configuração Salva      | SQLite (`profile.db`)               | Preferências sobrevivem reinicializações da JVM             |
 
 ---
 
@@ -62,8 +62,7 @@ build());
 
 ### 2. Registrar preferências
 
-Registrar cria (ou atualiza) o arquivo `profile.json` dentro da pasta do perfil. Só é necessário na **primeira execução
-** ou quando as preferências mudarem.
+Registrar cria (ou atualiza) a tabela no banco `profile.db` dentro da pasta do perfil. Só é necessário na **primeira execução** ou quando as preferências mudarem.
 
 ```java
 import balbucio.browser4j.browser.profile.ProfilePreferences;
@@ -109,8 +108,7 @@ loadURL("https://exemplo.com");
 
 ## Gerenciamento de Múltiplos Perfis
 
-O `ProfileManager` suporta múltiplos perfis nomeados no mesmo diretório base. Cada perfil tem sua pasta própria e
-`profile.json` individual.
+O `ProfileManager` suporta múltiplos perfis nomeados no mesmo diretório base. Cada perfil tem sua pasta própria e `profile.db` individual.
 
 ```java
 // Na primeira execução: registrar todos os perfis necessários
@@ -189,7 +187,7 @@ Após ativar e registrar um perfil, a estrutura de pastas será:
 ~/.browser4j/
 └── profiles/
     └── perfil-padrao/
-        ├── profile.json         ← preferências do Browser4j
+        ├── profile.db           ← preferências do Browser4j (SQLite)
         ├── Cookies              ← gerenciado pelo Chromium
         ├── Cache/               ← gerenciado pelo Chromium
         ├── Local Storage/       ← gerenciado pelo Chromium

@@ -1,58 +1,100 @@
 package balbucio.browser4j.browser.profile;
 
+import balbucio.browser4j.persistence.DatabaseManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Logger;
 
 /**
- * Handles serialization and deserialization of ProfileEntry to/from a profile.json file
- * located inside the profile directory.
+ * Handles persistence of ProfileEntry via SQLite.
+ *
+ * <p>Each profile directory contains a 'profile.db' file.
  */
 public class ProfileSerializer {
 
-    private static final String PROFILE_FILE = "profile.json";
+    private static final Logger LOG = Logger.getLogger(ProfileSerializer.class.getName());
+    private static final String PROFILE_DB = "profile.db";
+    private static final Gson GSON = new GsonBuilder().create();
 
-    private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .create();
+    private static final String INIT_DDL = """
+            CREATE TABLE IF NOT EXISTS profile (
+                profile_id TEXT PRIMARY KEY,
+                display_name TEXT,
+                profile_path TEXT,
+                preferences_json TEXT
+            );
+            """;
 
-    /** Saves a ProfileEntry to &lt;profileDir&gt;/profile.json */
+    /** Saves a ProfileEntry to &lt;profileDir&gt;/profile.db */
     public static void save(ProfileEntry entry) throws IOException {
         Path dir = entry.getProfileDir();
         Files.createDirectories(dir);
-        Path file = dir.resolve(PROFILE_FILE);
-        Files.writeString(file, GSON.toJson(new ProfileEntryDto(entry)));
+        DatabaseManager dm = new DatabaseManager(dir.resolve(PROFILE_DB));
+        dm.initialize(INIT_DDL);
+
+        String sql = "INSERT OR REPLACE INTO profile (profile_id, display_name, profile_path, preferences_json) VALUES (?, ?, ?, ?)";
+        try (Connection conn = dm.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, entry.getProfileId());
+            pstmt.setString(2, entry.getDisplayName());
+            pstmt.setString(3, entry.getProfilePath());
+            
+            // Serialize preferences to JSON string for storage in its column
+            ProfilePreferences p = entry.getPreferences();
+            PreferencesDto dto = new PreferencesDto(p);
+            pstmt.setString(4, GSON.toJson(dto));
+            
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new IOException("Failed to save profile to SQLite", e);
+        }
     }
 
-    /** Reads a ProfileEntry from &lt;profileDir&gt;/profile.json, or null if not found. */
+    /** Reads a ProfileEntry from &lt;profileDir&gt;/profile.db, or null if not found. */
     public static ProfileEntry load(Path profileDir) throws IOException {
-        Path file = profileDir.resolve(PROFILE_FILE);
-        if (!Files.exists(file)) return null;
-        String json = Files.readString(file);
-        ProfileEntryDto dto = GSON.fromJson(json, ProfileEntryDto.class);
-        return dto.toEntry();
+        Path dbFile = profileDir.resolve(PROFILE_DB);
+        if (!Files.exists(dbFile)) return null;
+
+        DatabaseManager dm = new DatabaseManager(dbFile);
+        String sql = "SELECT profile_id, display_name, profile_path, preferences_json FROM profile LIMIT 1";
+        
+        try (Connection conn = dm.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            if (rs.next()) {
+                String id = rs.getString("profile_id");
+                String name = rs.getString("display_name");
+                String path = rs.getString("profile_path");
+                String json = rs.getString("preferences_json");
+                
+                PreferencesDto dto = GSON.fromJson(json, PreferencesDto.class);
+                return new ProfileEntry(id, name, path, dto.toPreferences());
+            }
+        } catch (SQLException e) {
+            LOG.warning("[Profile] Failed to load profile from SQLite: " + e.getMessage());
+        }
+        return null;
     }
 
-    // ---- Internal DTO (flat, Gson-friendly) ----
-
-    private static class ProfileEntryDto {
-        String profileId;
-        String displayName;
-        String profilePath;
+    /** Internal flat DTO for serializing preferences to/from the SQLite JSON column. */
+    private static class PreferencesDto {
         String theme;
         String language;
         String timezone;
         double zoomLevel;
         java.util.Map<String, Object> customFlags;
 
-        ProfileEntryDto(ProfileEntry e) {
-            ProfilePreferences p = e.getPreferences();
-            this.profileId   = e.getProfileId();
-            this.displayName = e.getDisplayName();
-            this.profilePath = e.getProfilePath();
+        PreferencesDto(ProfilePreferences p) {
             this.theme       = p.getTheme().getValue();
             this.language    = p.getLanguage();
             this.timezone    = p.getTimezone();
@@ -60,23 +102,16 @@ public class ProfileSerializer {
             this.customFlags = p.getCustomFlags();
         }
 
-        ProfileEntry toEntry() {
+        ProfilePreferences toPreferences() {
             ProfilePreferences.Theme themeEnum = java.util.Arrays.stream(ProfilePreferences.Theme.values())
                     .filter(t -> t.getValue().equalsIgnoreCase(theme))
                     .findFirst()
                     .orElse(ProfilePreferences.Theme.SYSTEM);
 
-            ProfilePreferences.Builder prefsBuilder = ProfilePreferences.builder()
-                    .theme(themeEnum)
-                    .language(language)
-                    .timezone(timezone)
-                    .zoomLevel(zoomLevel);
-
-            if (customFlags != null) {
-                customFlags.forEach(prefsBuilder::flag);
-            }
-
-            return new ProfileEntry(profileId, displayName, profilePath, prefsBuilder.build());
+            ProfilePreferences.Builder builder = ProfilePreferences.builder()
+                    .theme(themeEnum).language(language).timezone(timezone).zoomLevel(zoomLevel);
+            if (customFlags != null) customFlags.forEach(builder::flag);
+            return builder.build();
         }
     }
 }

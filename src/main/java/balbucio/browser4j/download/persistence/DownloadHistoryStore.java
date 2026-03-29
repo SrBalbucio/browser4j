@@ -3,141 +3,155 @@ package balbucio.browser4j.download.persistence;
 import balbucio.browser4j.download.model.DownloadCategory;
 import balbucio.browser4j.download.model.DownloadStatus;
 import balbucio.browser4j.download.model.DownloadTask;
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
+import balbucio.browser4j.persistence.DatabaseManager;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
- * JSON-based persistent store for download history.
+ * SQLite-based persistent store for download history.
  *
- * <p>Each profile gets its own {@code <profileDownloadDir>/history.json} file.
- * Writes are atomic (write-to-temp then rename) to survive crashes mid-write.
+ * <p>Each profile gets its own {@code <profileDownloadDir>/history.db} file.
  */
 public class DownloadHistoryStore {
 
     private static final Logger LOG = Logger.getLogger(DownloadHistoryStore.class.getName());
-    private static final String HISTORY_FILE = "history.json";
+    private static final String HISTORY_DB = "history.db";
 
-    private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .registerTypeAdapter(Instant.class,
-                    (JsonSerializer<Instant>) (src, t, ctx) -> new JsonPrimitive(src.toString()))
-            .registerTypeAdapter(Instant.class,
-                    (JsonDeserializer<Instant>) (json, t, ctx) -> Instant.parse(json.getAsString()))
-            .create();
+    private static final String INIT_DDL = """
+            CREATE TABLE IF NOT EXISTS download_history (
+                download_id TEXT PRIMARY KEY,
+                url TEXT,
+                file_name TEXT,
+                full_path TEXT,
+                mime_type TEXT,
+                total_bytes INTEGER,
+                received_bytes INTEGER,
+                status TEXT,
+                category TEXT,
+                created_at TEXT,
+                updated_at TEXT,
+                profile_id TEXT,
+                priority INTEGER,
+                retry_count INTEGER,
+                error_reason TEXT
+            );
+            """;
 
-    private final Path storeFile;
+    private final DatabaseManager dbManager;
 
     public DownloadHistoryStore(Path downloadDir) {
-        this.storeFile = downloadDir.resolve(HISTORY_FILE);
-        try { Files.createDirectories(downloadDir); } catch (IOException e) {
-            LOG.warning("[Download] Cannot create download dir: " + downloadDir);
+        Path dbFile = downloadDir.resolve(HISTORY_DB);
+        this.dbManager = new DatabaseManager(dbFile);
+        this.dbManager.initialize(INIT_DDL);
+    }
+
+    /** Saves or updates a single task. */
+    public synchronized void save(DownloadTask task) {
+        String sql = """
+                INSERT OR REPLACE INTO download_history (
+                    download_id, url, file_name, full_path, mime_type,
+                    total_bytes, received_bytes, status, category,
+                    created_at, updated_at, profile_id, priority,
+                    retry_count, error_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1,  task.getDownloadId());
+            pstmt.setString(2,  task.getUrl());
+            pstmt.setString(3,  task.getFileName());
+            pstmt.setString(4,  task.getFullPath());
+            pstmt.setString(5,  task.getMimeType());
+            pstmt.setLong(6,    task.getTotalBytes());
+            pstmt.setLong(7,    task.getReceivedBytes());
+            pstmt.setString(8,  task.getStatus().name());
+            pstmt.setString(9,  task.getCategory().name());
+            pstmt.setString(10, task.getCreatedAt().toString());
+            pstmt.setString(11, task.getUpdatedAt().toString());
+            pstmt.setString(12, task.getProfileId());
+            pstmt.setInt(13,    task.getPriority());
+            pstmt.setInt(14,    task.getRetryCount());
+            pstmt.setString(15, task.getErrorReason());
+            
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LOG.severe("[Download] Failed to save history to SQLite: " + e.getMessage());
         }
     }
 
-    /** Saves or updates a single task. If a task with the same downloadId exists, it is replaced. */
-    public synchronized void save(DownloadTask task) {
-        List<DownloadTask> all = loadRaw();
-        all.removeIf(t -> t.getDownloadId().equals(task.getDownloadId()));
-        all.add(task);
-        persist(all);
-    }
-
-    /** Loads all tasks for this store (all profiles in this dir). */
+    /** Loads all tasks for this store. */
     public synchronized List<DownloadTask> loadAll() {
-        return new ArrayList<>(loadRaw());
+        List<DownloadTask> results = new ArrayList<>();
+        String sql = "SELECT * FROM download_history ORDER BY created_at DESC";
+        
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                results.add(mapRowToTask(rs));
+            }
+        } catch (SQLException e) {
+            LOG.warning("[Download] Failed to load history from SQLite: " + e.getMessage());
+        }
+        return results;
     }
 
     /** Removes all tasks matching the given profileId. */
     public synchronized void clearByProfile(String profileId) {
-        List<DownloadTask> all = loadRaw();
-        all.removeIf(t -> profileId.equals(t.getProfileId()));
-        persist(all);
+        String sql = "DELETE FROM download_history WHERE profile_id = ?";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, profileId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LOG.warning("[Download] Failed to clear history: " + e.getMessage());
+        }
     }
 
     /** Removes a single task by downloadId. */
     public synchronized void remove(String downloadId) {
-        List<DownloadTask> all = loadRaw();
-        all.removeIf(t -> t.getDownloadId().equals(downloadId));
-        persist(all);
-    }
-
-    // ---- Internals ----
-
-    private List<DownloadTask> loadRaw() {
-        if (!Files.exists(storeFile)) return new ArrayList<>();
-        try {
-            String json = Files.readString(storeFile);
-            Type listType = new TypeToken<List<DownloadTaskDto>>(){}.getType();
-            List<DownloadTaskDto> dtos = GSON.fromJson(json, listType);
-            if (dtos == null) return new ArrayList<>();
-            return dtos.stream().map(DownloadTaskDto::toTask).collect(Collectors.toList());
-        } catch (Exception e) {
-            LOG.warning("[Download] Failed to read history: " + e.getMessage());
-            return new ArrayList<>();
+        String sql = "DELETE FROM download_history WHERE download_id = ?";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, downloadId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            LOG.warning("[Download] Failed to remove task: " + e.getMessage());
         }
     }
 
-    private void persist(List<DownloadTask> tasks) {
-        try {
-            List<DownloadTaskDto> dtos = tasks.stream().map(DownloadTaskDto::new).collect(Collectors.toList());
-            String json = GSON.toJson(dtos);
-            // Atomic write: temp file + rename
-            Path tmp = storeFile.resolveSibling(HISTORY_FILE + ".tmp");
-            Files.writeString(tmp, json);
-            Files.move(tmp, storeFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
-                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException e) {
-            LOG.warning("[Download] Failed to persist history: " + e.getMessage());
-        }
+    private DownloadTask mapRowToTask(ResultSet rs) throws SQLException {
+        return DownloadTask.builder()
+                .downloadId(rs.getString("download_id"))
+                .url(rs.getString("url"))
+                .fileName(rs.getString("file_name"))
+                .fullPath(rs.getString("full_path"))
+                .mimeType(rs.getString("mime_type"))
+                .totalBytes(rs.getLong("total_bytes"))
+                .receivedBytes(rs.getLong("received_bytes"))
+                .status(parseEnum(DownloadStatus.class, rs.getString("status"), DownloadStatus.COMPLETED))
+                .category(parseEnum(DownloadCategory.class, rs.getString("category"), DownloadCategory.OTHER))
+                .createdAt(Instant.parse(rs.getString("created_at")))
+                .updatedAt(Instant.parse(rs.getString("updated_at")))
+                .profileId(rs.getString("profile_id"))
+                .priority(rs.getInt("priority"))
+                .retryCount(rs.getInt("retry_count"))
+                .errorReason(rs.getString("error_reason"))
+                .build();
     }
 
-    // ---- Flat DTO for Gson ----
-    private static class DownloadTaskDto {
-        String downloadId, url, fileName, fullPath, mimeType, status, category, createdAt, updatedAt, profileId, errorReason;
-        long totalBytes, receivedBytes;
-        int priority, retryCount;
-
-        DownloadTaskDto(DownloadTask t) {
-            this.downloadId    = t.getDownloadId();
-            this.url           = t.getUrl();
-            this.fileName      = t.getFileName();
-            this.fullPath      = t.getFullPath();
-            this.mimeType      = t.getMimeType();
-            this.totalBytes    = t.getTotalBytes();
-            this.receivedBytes = t.getReceivedBytes();
-            this.status        = t.getStatus().name();
-            this.category      = t.getCategory().name();
-            this.createdAt     = t.getCreatedAt().toString();
-            this.updatedAt     = t.getUpdatedAt().toString();
-            this.profileId     = t.getProfileId();
-            this.priority      = t.getPriority();
-            this.retryCount    = t.getRetryCount();
-            this.errorReason   = t.getErrorReason();
-        }
-
-        DownloadTask toTask() {
-            return DownloadTask.builder()
-                    .downloadId(downloadId).url(url).fileName(fileName).fullPath(fullPath)
-                    .mimeType(mimeType).totalBytes(totalBytes).receivedBytes(receivedBytes)
-                    .status(parseEnum(DownloadStatus.class, status, DownloadStatus.COMPLETED))
-                    .category(parseEnum(DownloadCategory.class, category, DownloadCategory.OTHER))
-                    .createdAt(Instant.parse(createdAt)).updatedAt(Instant.parse(updatedAt))
-                    .profileId(profileId).priority(priority).retryCount(retryCount)
-                    .errorReason(errorReason).build();
-        }
-
-        private <E extends Enum<E>> E parseEnum(Class<E> cls, String val, E fallback) {
-            try { return Enum.valueOf(cls, val); } catch (Exception e) { return fallback; }
-        }
+    private <E extends Enum<E>> E parseEnum(Class<E> cls, String val, E fallback) {
+        try { return Enum.valueOf(cls, val); } catch (Exception e) { return fallback; }
     }
 }
