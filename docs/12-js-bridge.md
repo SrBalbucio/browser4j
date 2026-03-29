@@ -103,6 +103,34 @@ public CompletableFuture<String> fetchExternalData() {
 *   **Privacidade**: Apenas métodos marcados com `@BridgeMethod` são expostos. Métodos internos da classe permanecem seguros.
 *   **Tratamento de Erros**: Se o método Java lançar uma exceção, a Promise no JavaScript será rejeitada com os detalhes do erro.
 
+### 🛡️ Hardening do JSBridge (token de autorização)
+
+A partir da atualização, `JSBridge` gera um token interno único para cada instância de browser.
+
+* `JSBridge` tem `bridgeToken` (UUID gerado em Java) e o expõe no JavaScript como `window.__browser4j_bridge_token`.
+* Os payloads enviados por `window.bridge(...)` são automaticamente enriquecidos com 
+  `bridgeToken` pelo wrapper injetado no browser.
+* No lado servidor (handler de query), `JSBridge` valida `msg.bridgeToken` e rejeita chamados não autorizados com `401`.
+
+Isso impede que scripts terceiros não autorizados (injetados pela página web) façam chamadas diretas para a bridge sem o token.
+
+### 🧩 Proteção em `DOMMutationObserver` e eventos do bridge
+
+*Mudanças recentes:* o script de observação do DOM (`DOMMutationObserverInjector`) agora inclui token no payload.
+
+* `dom_mutation` é enviado como:
+  * `event: 'dom_mutation'`
+  * `data: {...}`
+  * `bridgeToken: window.__browser4j_bridge_token`
+
+Sem token válido, o evento é descartado pelo `JSBridge`.
+
+### 💡 Dicas para desenvolvedores
+
+1. Nunca sobrescreva `window.bridge` ou `window.__browser4j_bridge_token` na sua página.
+2. Prefira sempre usar `browser.media().scanMedia()` ou `browser.media().listMedia()` para obter mídias, em vez de fazer queries manuais (evita inconsistências entre JS e Java).
+3. Se for criar módulos customizados com `BridgeModule`, faça validação de input no método Java (rejeite URLs e strings maliciosas).
+
 ---
 
 [← Voltar: Cache Avançado](11-cache-manager.md) | [Home →](../get-started.md)
