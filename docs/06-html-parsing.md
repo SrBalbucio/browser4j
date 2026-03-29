@@ -71,6 +71,45 @@ browser.addDomMutationListener(new DomMutationListener() {
 - Validação de estrutura dinâmica (elementos adicionados/removidos/alterados)
 - Triggers de automação reativos a mudanças de DOM
 
+## 4. Metadata da aba (title, icon, descrição, keywords)
+
+A classe `TabState` agora guarda metadados de site:
+
+- `title`
+- `url`
+- `icon` (favicon / apple-touch-icon)
+- `description` (meta description / og:description)
+- `keywords` (meta keywords)
+
+O `Tab` atualiza esses campos automaticamente no evento `onLoadEnd`, usando `browser.getSiteMetadata()`.
+
+### Exemplo de leitura de metadados
+
+```java
+Tab active = tabManager.getActiveTab();
+if (active != null) {
+    TabState state = active.getState();
+    System.out.println("Título: " + state.getTitle());
+    System.out.println("URL: " + state.getUrl());
+    System.out.println("Ícone: " + state.getIcon());
+    System.out.println("Descrição: " + state.getDescription());
+    System.out.println("Keywords: " + state.getKeywords());
+}
+```
+
+### Uso via Browser API
+
+O `Browser` agora também tem método `getSiteMetadata()`:
+
+```java
+browser.getSiteMetadata().thenAccept(meta -> {
+    System.out.println("Title: " + meta.getTitle());
+    System.out.println("Icon: " + meta.getIcon());
+    System.out.println("Description: " + meta.getDescription());
+    System.out.println("Keywords: " + meta.getKeywords());
+});
+```
+
 ### Observações
 
 - O evento é enviado em lote após cada observação de mutation e pode conter várias mudanças por emissão.

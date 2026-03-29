@@ -2,6 +2,7 @@ package balbucio.browser4j.ui.tab;
 
 import balbucio.browser4j.browser.api.Browser;
 import balbucio.browser4j.browser.api.CefBrowserImpl;
+import balbucio.browser4j.browser.api.SiteMetadata;
 import balbucio.browser4j.browser.events.BrowserEventListener;
 import balbucio.browser4j.ui.abstraction.BrowserView;
 
@@ -29,6 +30,20 @@ public class Tab {
             public void onLoadEnd(String url, int httpStatusCode) {
                 state.setLoading(false);
                 state.setUrl(url);
+
+                browser.getSiteMetadata().thenAccept(siteMetadata -> {
+                    if (siteMetadata != null) {
+                        if (siteMetadata.getTitle() != null && !siteMetadata.getTitle().isBlank()) {
+                            state.setTitle(siteMetadata.getTitle());
+                        }
+                        state.setIcon(siteMetadata.getIcon());
+                        state.setDescription(siteMetadata.getDescription());
+                        state.setKeywords(siteMetadata.getKeywords());
+                    }
+                }).exceptionally(err -> {
+                    // ignore metadata fetch failures; PAGE still loads
+                    return null;
+                });
             }
 
             @Override

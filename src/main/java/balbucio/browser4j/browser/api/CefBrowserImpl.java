@@ -592,6 +592,12 @@ public class CefBrowserImpl implements Browser {
     }
 
     @Override
+    public java.util.concurrent.CompletableFuture<SiteMetadata> getSiteMetadata() {
+        String currentUrl = cefBrowser.getURL();
+        return getDOM().thenApply(doc -> SiteMetadata.fromDocument(doc, currentUrl));
+    }
+
+    @Override
     public Object getNativeBrowser() {
         return cefBrowser;
     }
