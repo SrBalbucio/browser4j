@@ -95,3 +95,4 @@ Consulte a documentação em `/docs` para mergulhar nas capacidades mais profund
 * [API do Browser e Navegação](docs/02-browser-instance.md)
 * [Eventos, Rede, Cookies e Segurança](docs/03-events-network.md)
 * [Gerenciamento de Cache Avançado](docs/11-cache-manager.md)
+* [JS Bridge Modular](docs/12-js-bridge.md)

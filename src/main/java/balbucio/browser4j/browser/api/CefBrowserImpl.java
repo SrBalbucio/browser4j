@@ -231,6 +231,12 @@ public class CefBrowserImpl implements Browser {
                             })();
                             """, browser.getURL(), 0);
 
+                    // Inject JS Bridge modular proxies
+                    String bridgeScript = jsBridge.getInjectionScript();
+                    if (!bridgeScript.isEmpty()) {
+                        browser.executeJavaScript(bridgeScript, browser.getURL(), 0);
+                    }
+
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadStart(frame.getURL());
                     }

@@ -1,4 +1,5 @@
 # 🌐 Browser4j
+[![](https://img.shields.io/badge/HyperPowered-Use%20the%20official%20repository-yellow?color=%23279BF8&cacheSeconds=3600)](https://maven.dev.hyperpowered.net/#/releases/balbucio/browser4j/)
 
 O **Browser4j** é uma biblioteca Java robusta projetada para embutir um navegador avançado baseado no **Chromium (via JCEF)** em aplicações Swing ou AWT, com foco em controle de rede, performance de cache e gerenciamento de perfis.
 
@@ -9,6 +10,7 @@ O **Browser4j** é uma biblioteca Java robusta projetada para embutir um navegad
 -   🚀 **Advanced Cache**: Sistema multi-camada com SQLite (metadados), SHA-256 (deduplicação) e GZIP (compressão).
 -   📂 **Download Manager**: Controle total do ciclo de vida de downloads com camadas de segurança integradas.
 -   📜 **History & Autocomplete**: Histórico persistente com busca ultra-rápida via **SQLite FTS5**.
+-   🔗 **Modular JS Bridge**: Exponha métodos Java ao JavaScript com anotações e suporte a Promises.
 -   👤 **Profile Management**: Perfis totalmente isolados (cookies, localStorage, cache e histórico).
 -   📑 **Multi-Tab Support**: Gerenciador de abas flexível para aplicações multi-documento.
 -   🛠️ **DevTools & Hooks**: Acesso nativo ao Inspector do Chromium e intercepção de rede completa.
@@ -54,6 +56,7 @@ Mergulhe nas capacidades do Browser4j consultando nossos guias:
 7.  **[Gerenciador de Downloads](docs/09-download-manager.md)** - Fluxo de arquivos.
 8.  **[Histórico e Autocomplete](docs/10-history-manager.md)** - Persistência de navegação.
 9.  **[Cache Avançado](docs/11-cache-manager.md)** - Otimização de performance e disco.
+10. **[JS Bridge Modular](docs/12-js-bridge.md)** - Comunicação estruturada Java-JS.
 
 ---
 

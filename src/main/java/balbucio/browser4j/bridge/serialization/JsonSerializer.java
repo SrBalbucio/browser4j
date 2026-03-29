@@ -17,4 +17,8 @@ public class JsonSerializer {
     public <T> T deserialize(String json, Class<T> clazz) throws JsonProcessingException {
         return mapper.readValue(json, clazz);
     }
+
+    public ObjectMapper getMapper() {
+        return mapper;
+    }
 }

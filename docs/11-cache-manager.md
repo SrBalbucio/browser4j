@@ -76,4 +76,4 @@ A configuração é definida via `CacheConfig` no momento da criação da instâ
 
 ---
 
-[← Voltar: Gerenciamento de Histórico](10-history-manager.md) | [Início →](../get-started.md)
+[← Voltar: Gerenciamento de Histórico](10-history-manager.md) | [JS Bridge Modular →](12-js-bridge.md)
