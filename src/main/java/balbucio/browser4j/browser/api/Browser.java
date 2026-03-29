@@ -36,6 +36,9 @@ public interface Browser {
     void addEventListener(BrowserEventListener listener);
     void removeEventListener(BrowserEventListener listener);
 
+    void addDomMutationListener(balbucio.browser4j.browser.events.DomMutationListener listener);
+    void removeDomMutationListener(balbucio.browser4j.browser.events.DomMutationListener listener);
+
     void addFrameCaptureListener(balbucio.browser4j.browser.events.FrameCaptureListener listener);
     void removeFrameCaptureListener(balbucio.browser4j.browser.events.FrameCaptureListener listener);
 

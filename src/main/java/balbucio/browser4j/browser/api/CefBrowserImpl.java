@@ -2,6 +2,9 @@ package balbucio.browser4j.browser.api;
 
 import balbucio.browser4j.browser.event.CefOnPaintHandlerAdapter;
 import balbucio.browser4j.browser.events.BrowserEventListener;
+import balbucio.browser4j.browser.events.DomMutationEvent;
+import balbucio.browser4j.browser.events.DomMutationListener;
+import balbucio.browser4j.browser.api.DOMMutationObserverInjector;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
@@ -60,6 +63,7 @@ import balbucio.browser4j.automation.api.AutomationModuleImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import balbucio.browser4j.storage.api.StorageModuleImpl;
 import balbucio.browser4j.browser.error.BrowserError;
 import balbucio.browser4j.browser.error.BrowserErrorType;
@@ -71,6 +75,7 @@ public class CefBrowserImpl implements Browser {
     private final CefClient cefClient;
     private final List<BrowserEventListener> listeners;
     private final List<FrameCaptureListener> frameListeners;
+    private final List<DomMutationListener> domMutationListeners;
     private final JSBridge jsBridge;
     private final NetworkHandlerImpl networkHandler;
     private final InputController inputController;
@@ -112,6 +117,7 @@ public class CefBrowserImpl implements Browser {
         this.options = options;
         this.listeners = new ArrayList<>();
         this.frameListeners = new ArrayList<>();
+        this.domMutationListeners = new ArrayList<>();
 
         this.cefClient = cefApp.createClient();
 
@@ -191,6 +197,20 @@ public class CefBrowserImpl implements Browser {
                 }
             } else if ("spa_navigation".equals(event)) {
                 recordHistory(this.cefBrowser.getURL());
+            } else if ("dom_mutation".equals(event)) {
+                if (data instanceof Map) {
+                    Object mutations = ((Map<?, ?>) data).get("mutations");
+                    if (mutations instanceof java.util.List) {
+                        for (Object item : (java.util.List<?>) mutations) {
+                            if (item instanceof Map) {
+                                DomMutationEvent mutationEvent = DomMutationEvent.fromMap((Map<?, ?>) item);
+                                for (DomMutationListener listener : domMutationListeners) {
+                                    listener.onDomMutation(mutationEvent);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
     }
@@ -214,6 +234,9 @@ public class CefBrowserImpl implements Browser {
 
                     // Inject DRM hooks
                     browser.executeJavaScript(DRMInjector.INJECTION_SCRIPT, browser.getURL(), 0);
+
+                    // Inject DOM mutation observer hooks
+                    browser.executeJavaScript(DOMMutationObserverInjector.INJECTION_SCRIPT, browser.getURL(), 0);
 
                     // Inject SPA tracking hooks
                     browser.executeJavaScript("""
@@ -482,6 +505,16 @@ public class CefBrowserImpl implements Browser {
     @Override
     public void removeEventListener(BrowserEventListener listener) {
         listeners.remove(listener);
+    }
+
+    @Override
+    public void addDomMutationListener(DomMutationListener listener) {
+        domMutationListeners.add(listener);
+    }
+
+    @Override
+    public void removeDomMutationListener(DomMutationListener listener) {
+        domMutationListeners.remove(listener);
     }
 
     @Override

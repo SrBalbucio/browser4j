@@ -35,4 +35,45 @@ tab1.getBrowser().getDOM().thenAccept((Document doc) -> {
 > 
 > Ele age como uma **cópia estática (Snapshot)**. Se a página web continuar mudando após a captura (exemplo: novos elementos adicionados via WebSockets, animações React/Vue alterando as classes, ou requisições AJAX chegando tardiamente), **estas alterações não serão refletidas** no objeto `Document` retornado.
 >
-> Não é possível fazer Live-Tracking de instâncias baseadas no DOM Jsoup retornado. Você precisará chamar `getDOM()` frequentemente em momentos cruciais da navegação para obter um Snapshot atualizado. Abordagens de "tempo real" serão exploradas na biblioteca futuramente com base em Mutational Observers.
+> Não é possível fazer Live-Tracking de instâncias baseadas no DOM Jsoup retornado. Você precisará chamar `getDOM()` frequentemente em momentos cruciais da navegação para obter um Snapshot atualizado.
+
+## 2. Observação de mudanças no DOM em tempo real (MutationObserver)
+
+Foi adicionada uma nova API para acompanhar mutações do DOM em tempo real, usando `MutationObserver` injetado no contexto da página:
+
+- `Browser.addDomMutationListener(DomMutationListener listener)`
+- `Browser.removeDomMutationListener(DomMutationListener listener)`
+
+A cada mutação válida (`childList`, `attributes`, `characterData`), o Browser4j envia evento `dom_mutation` através da ponte JSBridge para Java.
+
+### Exemplo de uso
+
+```java
+import balbucio.browser4j.browser.events.DomMutationEvent;
+import balbucio.browser4j.browser.events.DomMutationListener;
+
+browser.addDomMutationListener(new DomMutationListener() {
+    @Override
+    public void onDomMutation(DomMutationEvent event) {
+        System.out.println("DOM mutation: " + event.getType());
+        System.out.println("Target: " + event.getTargetTag() + " id=" + event.getTargetId());
+        System.out.println("OuterHTML: " + event.getOuterHTML());
+        System.out.println("Added elements: " + event.getAddedOuterHTML());
+        System.out.println("Removed elements: " + event.getRemovedOuterHTML());
+        System.out.println("Attribute: " + event.getAttributeName() + " old=" + event.getOldValue());
+    }
+});
+```
+
+### Quando usar
+
+- Raspagem em páginas altamente dinâmicas (SPA, atualizações em tempo real, data grids)
+- Validação de estrutura dinâmica (elementos adicionados/removidos/alterados)
+- Triggers de automação reativos a mudanças de DOM
+
+### Observações
+
+- O evento é enviado em lote após cada observação de mutation e pode conter várias mudanças por emissão.
+- Pode gerar muito tráfego para alterações intensas; use lógica de filtro no listener para evitar sobrecarga.
+- Esse mecanismo complementa `getDOM()` e permite use cases de monitoramento contínuo enquanto a página está ativa.
+
