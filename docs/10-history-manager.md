@@ -80,4 +80,4 @@ O suporte a SPA é feito via injeção automática de um script JavaScript que "
 
 ---
 
-[← Voltar: Gerenciamento de Downloads](09-download-manager.md) | [Gerenciamento de Multiplas Abas →](05-tab-manager.md)
+[← Voltar: Gerenciamento de Downloads](09-download-manager.md) | [Gerenciamento de Cache Avançado →](11-cache-manager.md)

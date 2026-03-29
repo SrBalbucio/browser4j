@@ -1,14 +1,18 @@
 package balbucio.browser4j.download.handler;
 
-import balbucio.browser4j.download.api.DownloadManagerImpl;
+import balbucio.browser4j.download.api.DownloadManager;
 import org.cef.browser.CefBrowser;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefDownloadItem;
 import org.cef.callback.CefDownloadItemCallback;
 import org.cef.handler.CefDownloadHandlerAdapter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * JCEF download handler that bridges Chromium download events to {@link DownloadManagerImpl}.
+ * JCEF download handler that bridges Chromium download events to {@link DownloadManager}.
  *
  * <p>Replaces the old {@code DownloadBlockerHandler} in {@code CefBrowserImpl}.
  * The profile ID is bound at construction time so downloads are always attributed
@@ -16,14 +20,14 @@ import org.cef.handler.CefDownloadHandlerAdapter;
  */
 public class DownloadHandlerImpl extends CefDownloadHandlerAdapter {
 
-    private final DownloadManagerImpl manager;
-    private final String              profileId;
+    private final balbucio.browser4j.download.api.DownloadManagerImpl manager;
+    private final String profileId;
 
     /**
-     * @param manager   the shared DownloadManagerImpl for this browser instance
+     * @param manager   the shared DownloadManager for this browser instance
      * @param profileId the profile this browser belongs to ("global" if none)
      */
-    public DownloadHandlerImpl(DownloadManagerImpl manager, String profileId) {
+    public DownloadHandlerImpl(balbucio.browser4j.download.api.DownloadManagerImpl manager, String profileId) {
         this.manager   = manager;
         this.profileId = profileId;
     }

@@ -94,3 +94,4 @@ Consulte a documentação em `/docs` para mergulhar nas capacidades mais profund
 * [Configurações do Runtime e Options](docs/01-runtime-config.md)
 * [API do Browser e Navegação](docs/02-browser-instance.md)
 * [Eventos, Rede, Cookies e Segurança](docs/03-events-network.md)
+* [Gerenciamento de Cache Avançado](docs/11-cache-manager.md)

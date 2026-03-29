@@ -33,6 +33,10 @@ import balbucio.browser4j.browser.input.InputController;
 import balbucio.browser4j.core.runtime.BrowserRuntime;
 import balbucio.browser4j.security.api.SecurityModuleImpl;
 import balbucio.browser4j.security.handlers.PopupAndLifeSpanHandler;
+import balbucio.browser4j.cache.api.CacheManager;
+import balbucio.browser4j.cache.api.CacheManagerImpl;
+import balbucio.browser4j.cache.config.CacheConfig;
+import balbucio.browser4j.cache.interception.CacheInterceptor;
 import balbucio.browser4j.download.api.DownloadManager;
 import balbucio.browser4j.download.api.DownloadManagerImpl;
 import balbucio.browser4j.download.config.DownloadConfig;
@@ -75,7 +79,8 @@ public class CefBrowserImpl implements Browser {
     private final StorageModuleImpl storageModule;
     private final ErrorPageRegistry errorPageRegistry;
     private final ErrorPageRenderer errorPageRenderer;
-    private final DownloadManagerImpl downloadManager;
+    private final DownloadManager downloadManager;
+    private final CacheManager cacheManager;
     private final HistoryManager historyManager;
     private final AutocompleteService autocompleteService;
     private Consumer<String> consoleMessageHandler;
@@ -141,8 +146,17 @@ public class CefBrowserImpl implements Browser {
         this.historyManager = new HistoryManagerImpl(historyPath);
         this.autocompleteService = new AutocompleteService(this.historyManager);
 
+        // Initialize Cache
+        CacheConfig cacheConfig = CacheConfig.builder()
+                .enabled(true)
+                .maxCacheSizeBytes(1024L * 1024 * 1024)
+                .build();
+        java.nio.file.Path cachePath = historyPath.resolve("cache");
+        this.cacheManager = new CacheManagerImpl(cacheConfig, cachePath);
+        this.networkHandler.setCacheInterceptor(new CacheInterceptor(cacheManager));
+
         this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
-        this.cefClient.addDownloadHandler(new DownloadHandlerImpl(this.downloadManager, profileId));
+        this.cefClient.addDownloadHandler(new DownloadHandlerImpl((DownloadManagerImpl) this.downloadManager, profileId));
 
         CefRequestContext context = CefRequestContext.getGlobalContext();
         CefCookieManager globalCookieManager = CefCookieManager.getGlobalManager();
@@ -356,6 +370,11 @@ public class CefBrowserImpl implements Browser {
 
     @Override
     public DownloadManager downloads() { return downloadManager; }
+
+    @Override
+    public CacheManager cache() {
+        return cacheManager;
+    }
 
     @Override
     public HistoryManager history() { return historyManager; }

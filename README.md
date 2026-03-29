@@ -1,0 +1,61 @@
+# 🌐 Browser4j
+
+O **Browser4j** é uma biblioteca Java robusta projetada para embutir um navegador avançado baseado no **Chromium (via JCEF)** em aplicações Swing ou AWT, com foco em controle de rede, performance de cache e gerenciamento de perfis.
+
+---
+
+## ✨ Principais Funcionalidades
+
+-   🚀 **Advanced Cache**: Sistema multi-camada com SQLite (metadados), SHA-256 (deduplicação) e GZIP (compressão).
+-   📂 **Download Manager**: Controle total do ciclo de vida de downloads com camadas de segurança integradas.
+-   📜 **History & Autocomplete**: Histórico persistente com busca ultra-rápida via **SQLite FTS5**.
+-   👤 **Profile Management**: Perfis totalmente isolados (cookies, localStorage, cache e histórico).
+-   📑 **Multi-Tab Support**: Gerenciador de abas flexível para aplicações multi-documento.
+-   🛠️ **DevTools & Hooks**: Acesso nativo ao Inspector do Chromium e intercepção de rede completa.
+
+---
+
+## 🚀 Início Rápido
+
+### Depedência (Maven)
+```xml
+<dependency>
+    <groupId>balbucio.browser4j</groupId>
+    <artifactId>browser4j</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+### Exemplo Minimalista
+```java
+// 1. Inicializa o Runtime global
+BrowserRuntime.init(BrowserRuntimeConfiguration.builder().build());
+
+// 2. Cria a instância do navegador
+Browser browser = CefBrowserImpl.create(BrowserRuntime.getCefApp());
+
+// 3. Adiciona ao JFrame e navega
+frame.add(browser.getView().getUIComponent());
+browser.loadURL("https://github.com/balbucio/browser4j");
+```
+
+---
+
+## 📚 Documentação Detalhada
+
+Mergulhe nas capacidades do Browser4j consultando nossos guias:
+
+1.  **[Getting Started](get-started.md)** - Guia de configuração inicial.
+2.  **[Configuração do Runtime](docs/01-runtime-config.md)** - Feature flags e inicialização.
+3.  **[API de Navegação](docs/02-browser-instance.md)** - Comandos básicos e avançados.
+4.  **[Intercepção de Rede](docs/03-events-network.md)** - Hooks de requests e cookies.
+5.  **[Gerenciador de Abas](docs/05-tab-manager.md)** - Lógica multi-janela.
+6.  **[Perfis e Isolamento](docs/07-profile-manager.md)** - Gerenciamento de usuários.
+7.  **[Gerenciador de Downloads](docs/09-download-manager.md)** - Fluxo de arquivos.
+8.  **[Histórico e Autocomplete](docs/10-history-manager.md)** - Persistência de navegação.
+9.  **[Cache Avançado](docs/11-cache-manager.md)** - Otimização de performance e disco.
+
+---
+
+## ⚖️ Licença
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.

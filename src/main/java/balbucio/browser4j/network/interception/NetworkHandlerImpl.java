@@ -30,6 +30,7 @@ public class NetworkHandlerImpl implements NetworkModule {
     private final List<ResponseHandler> responseHandlers = new ArrayList<>();
     private final MetricsTracker metricsTracker;
     private final SecurityModuleImpl securityModule;
+    private balbucio.browser4j.cache.interception.CacheInterceptor cacheInterceptor;
 
     public NetworkHandlerImpl(CefClient client, MetricsTracker metricsTracker, SecurityModuleImpl securityModule) {
         this.metricsTracker = metricsTracker;
@@ -88,11 +89,18 @@ public class NetworkHandlerImpl implements NetworkModule {
                                 }
                             } catch (Exception e) {}
                         }
+                        if (cacheInterceptor != null) {
+                            return cacheInterceptor.onResourceResponse(browser, frame, request, response);
+                        }
                         return false;
                     }
 
                     @Override
                     public CefResourceHandler getResourceHandler(CefBrowser browser, CefFrame frame, CefRequest request) {
+                        if (cacheInterceptor != null) {
+                            CefResourceHandler handler = cacheInterceptor.getResourceHandler(browser, frame, request);
+                            if (handler != null) return handler;
+                        }
                         for (RequestHandler handler : requestHandlers) {
                             RequestDecision decision = handler.handle(request.getURL(), request.getMethod());
                             if (decision.getMockedResponse() != null) {
@@ -101,36 +109,6 @@ public class NetworkHandlerImpl implements NetworkModule {
                         }
                         return null;
                     }
-
-                    @Override
-                    public CefCookieAccessFilter getCookieAccessFilter(CefBrowser browser, CefFrame frame, CefRequest request) {
-                        return super.getCookieAccessFilter(browser, frame, request);
-                    }
-
-//                    @Override
-//                    public CefResponseFilter getResourceResponseFilter(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response) {
-//                        if (responseHandlers.isEmpty()) return null;
-//
-//                        return new CefResponseFilter() {
-//                            @Override
-//                            public boolean initFilter() { return true; }
-//
-//                            @Override
-//                            public FilterStatus filter(ByteBuffer data_in, int data_in_size, IntRef data_in_read, ByteBuffer data_out, int data_out_size, IntRef data_out_written) {
-//                                if (data_in_size == 0) return FilterStatus.RESPONSE_FILTER_DONE;
-//                                byte[] chunk = new byte[data_in_size];
-//                                data_in.get(chunk);
-//                                for (ResponseHandler handler : responseHandlers) {
-//                                    handler.handle(request.getURL(), response.getStatus(), response.getMimeType(), chunk);
-//                                }
-//                                int writeSize = Math.min(data_in_size, data_out_size);
-//                                data_out.put(chunk, 0, writeSize);
-//                                data_in_read.set(writeSize);
-//                                data_out_written.set(writeSize);
-//                                return writeSize < data_in_size ? FilterStatus.RESPONSE_FILTER_NEED_MORE_DATA : FilterStatus.RESPONSE_FILTER_DONE;
-//                            }
-//                        };
-//                    }
 
                     @Override
                     public void onResourceLoadComplete(CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response, CefURLRequest.Status status, long receivedContentLength) {
@@ -149,5 +127,10 @@ public class NetworkHandlerImpl implements NetworkModule {
     @Override
     public void onResponse(ResponseHandler handler) {
         responseHandlers.add(handler);
+    }
+
+    @Override
+    public void setCacheInterceptor(balbucio.browser4j.cache.interception.CacheInterceptor interceptor) {
+        this.cacheInterceptor = interceptor;
     }
 }
