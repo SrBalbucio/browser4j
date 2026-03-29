@@ -49,6 +49,10 @@ import balbucio.browser4j.browser.profile.ProfileEntry;
 import java.util.ArrayList;
 import java.util.List;
 import balbucio.browser4j.storage.api.StorageModuleImpl;
+import balbucio.browser4j.browser.error.BrowserError;
+import balbucio.browser4j.browser.error.BrowserErrorType;
+import balbucio.browser4j.browser.error.ErrorPageRegistry;
+import balbucio.browser4j.browser.error.ErrorPageRenderer;
 
 public class CefBrowserImpl implements Browser {
     private final CefBrowser cefBrowser;
@@ -63,6 +67,8 @@ public class CefBrowserImpl implements Browser {
     private final CookieManager cookieManager;
     private final BrowserOptions options;
     private final StorageModuleImpl storageModule;
+    private final ErrorPageRegistry errorPageRegistry;
+    private final ErrorPageRenderer errorPageRenderer;
     private Consumer<String> consoleMessageHandler;
 
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -99,6 +105,8 @@ public class CefBrowserImpl implements Browser {
         this.securityModule = new SecurityModuleImpl();
         this.networkHandler = new NetworkHandlerImpl(this.cefClient, this.metricsTracker, this.securityModule);
         this.storageModule = new StorageModuleImpl(this.jsBridge);
+        this.errorPageRegistry = new ErrorPageRegistry();
+        this.errorPageRenderer = new ErrorPageRenderer(this.errorPageRegistry);
 
         this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
         this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
@@ -170,6 +178,22 @@ public class CefBrowserImpl implements Browser {
                                     browser.getRequestContext());
                         }
                     }
+
+                    // Intercept selected HTTP error status codes
+                    BrowserErrorType httpType = BrowserErrorType.fromHttpStatus(httpStatusCode);
+                    String currentUrl = frame.getURL();
+                    if (httpType != null && currentUrl != null
+                            && !currentUrl.startsWith("data:") && !currentUrl.startsWith("file:")) {
+                        BrowserError err = BrowserError.builder()
+                                .url(currentUrl)
+                                .httpStatusCode(httpStatusCode)
+                                .errorText("HTTP " + httpStatusCode)
+                                .type(httpType)
+                                .build();
+                        CefBrowserImpl.this.notifyAndShowError(err);
+                        return; // don't propagate onLoadEnd to listeners for intercepted errors
+                    }
+
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadEnd(frame.getURL(), httpStatusCode);
                     }
@@ -179,6 +203,20 @@ public class CefBrowserImpl implements Browser {
             @Override
             public void onLoadError(CefBrowser browser, org.cef.browser.CefFrame frame, ErrorCode errorCode, String errorText, String failedUrl) {
                 if (frame.isMain()) {
+                    // Skip internal navigation errors (e.g. cancellation during redirect)
+                    if (errorCode.getCode() == -3) return; // ERR_ABORTED
+
+                    BrowserErrorType type = BrowserErrorType.fromCefCode(errorCode.getCode());
+                    BrowserError err = BrowserError.builder()
+                            .url(failedUrl)
+                            .cefErrorCode(errorCode.getCode())
+                            .errorText(errorText)
+                            .type(type)
+                            .build();
+
+                    CefBrowserImpl.this.notifyAndShowError(err);
+
+                    // Also fire raw onLoadError for backwards compatibility
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadError(failedUrl, errorCode.getCode(), errorText);
                     }
@@ -223,6 +261,17 @@ public class CefBrowserImpl implements Browser {
             }
         });
     }
+
+    /** Dispatches onBrowserError to listeners, then loads the error page HTML. */
+    private void notifyAndShowError(BrowserError error) {
+        for (BrowserEventListener listener : listeners) {
+            listener.onBrowserError(error);
+        }
+        loadHTML(errorPageRenderer.render(error));
+    }
+
+    @Override
+    public ErrorPageRegistry errors() { return errorPageRegistry; }
 
     @Override
     public void loadURL(String url) {
