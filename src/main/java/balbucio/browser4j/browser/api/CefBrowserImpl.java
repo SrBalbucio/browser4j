@@ -33,7 +33,10 @@ import balbucio.browser4j.browser.input.InputController;
 import balbucio.browser4j.core.runtime.BrowserRuntime;
 import balbucio.browser4j.security.api.SecurityModuleImpl;
 import balbucio.browser4j.security.handlers.PopupAndLifeSpanHandler;
-import balbucio.browser4j.security.handlers.DownloadBlockerHandler;
+import balbucio.browser4j.download.api.DownloadManager;
+import balbucio.browser4j.download.api.DownloadManagerImpl;
+import balbucio.browser4j.download.config.DownloadConfig;
+import balbucio.browser4j.download.handler.DownloadHandlerImpl;
 import balbucio.browser4j.observability.MetricsTracker;
 import balbucio.browser4j.network.api.NetworkModule;
 import balbucio.browser4j.security.api.SecurityModule;
@@ -69,6 +72,7 @@ public class CefBrowserImpl implements Browser {
     private final StorageModuleImpl storageModule;
     private final ErrorPageRegistry errorPageRegistry;
     private final ErrorPageRenderer errorPageRenderer;
+    private final DownloadManagerImpl downloadManager;
     private Consumer<String> consoleMessageHandler;
 
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -108,8 +112,21 @@ public class CefBrowserImpl implements Browser {
         this.errorPageRegistry = new ErrorPageRegistry();
         this.errorPageRenderer = new ErrorPageRenderer(this.errorPageRegistry);
 
+        // Download manager — uses active profile dir if available
+        String profileId = "global";
+        java.nio.file.Path downloadRoot = DownloadConfig.builder().build().getDefaultDownloadDir();
+        if (options != null && options.getSession() != null
+                && options.getSession().getProfile() != null) {
+            ProfileEntry pe = options.getSession().getProfile().getProfileEntry();
+            if (pe != null && pe.getProfilePath() != null) {
+                profileId   = pe.getProfileId();
+                downloadRoot = java.nio.file.Path.of(pe.getProfilePath()).resolve("downloads");
+            }
+        }
+        this.downloadManager = new DownloadManagerImpl(DownloadConfig.builder().build(), downloadRoot);
+
         this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
-        this.cefClient.addDownloadHandler(new DownloadBlockerHandler());
+        this.cefClient.addDownloadHandler(new DownloadHandlerImpl(this.downloadManager, profileId));
 
         CefRequestContext context = CefRequestContext.getGlobalContext();
         CefCookieManager globalCookieManager = CefCookieManager.getGlobalManager();
@@ -272,6 +289,9 @@ public class CefBrowserImpl implements Browser {
 
     @Override
     public ErrorPageRegistry errors() { return errorPageRegistry; }
+
+    @Override
+    public DownloadManager downloads() { return downloadManager; }
 
     @Override
     public void loadURL(String url) {

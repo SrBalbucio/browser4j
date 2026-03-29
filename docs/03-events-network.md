@@ -72,7 +72,7 @@ browser.addFrameCaptureListener(new FrameCaptureListener() {
 
 ### Módulos Integrados e Gerência Persistente
 
-Em tempo de execução sob abas ativas, as abas oferecem os métodos estendidos do projeto do Browser4j. Retorne seus controladores por `browser.network()`, `browser.security()`, `browser.cookies()`, `browser.storage()`, e `browser.devtools()`.
+Em tempo de execução sob abas ativas, as abas oferecem os métodos estendidos do projeto do Browser4j. Retorne seus controladores por `browser.network()`, `browser.security()`, `browser.cookies()`, `browser.storage()`, `browser.devtools()`, `browser.errors()` e `browser.downloads()`.
 
 
 #### `NetworkModule` (Controle de Rede)
@@ -110,6 +110,9 @@ SecurityModule seguranca = browser.security();
 
 // Proibe redirecionamentos sem controle e popups `target="_blank"` em botões maliciosos
 seguranca.setBlockPopups(true);
+
+> [!TIP]
+> Para um controle completo sobre downloads (progresso, pausa, segurança de extensões e histórico), use o novo **Download Manager**: [Gerenciamento de Downloads →](09-download-manager.md)
 ```
 
 ---
@@ -186,4 +189,4 @@ Além disso, a sua biblioteca de eventos (`BrowserEventListener`) agora entrega 
 
 ---
 
-[Próximo: Tratamento de Erros →](08-error-handler.md)
+[Próximo: Tratamento de Erros →](08-error-handler.md) | [Gerenciamento de Downloads →](09-download-manager.md)

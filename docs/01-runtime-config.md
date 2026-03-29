@@ -92,3 +92,4 @@ BrowserRuntime.shutdown();
 * [Extração de HTML e Parsing Jsoup →](06-html-parsing.md)
 * [Gerenciamento de Perfis Persistentes →](07-profile-manager.md)
 * [Tratamento de Erros do Browser →](08-error-handler.md)
+* [Gerenciamento de Downloads →](09-download-manager.md)
