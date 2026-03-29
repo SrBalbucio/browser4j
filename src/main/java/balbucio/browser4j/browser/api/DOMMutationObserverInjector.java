@@ -29,7 +29,9 @@ public class DOMMutationObserverInjector {
             "        removed: serializeNodeList(m.removedNodes)" +
             "      }))};" +
             "      if (window.bridge) {" +
-            "        window.bridge({request: JSON.stringify({event:'dom_mutation',data:data}),onSuccess:function(){},onFailure:function(){}});" +
+            "        const token = window.__browser4j_bridge_token || null;" +
+            "        const payload = { event: 'dom_mutation', data: data, bridgeToken: token };" +
+            "        window.bridge({request: JSON.stringify(payload), onSuccess: function(){}, onFailure: function(){}});" +
             "      }" +
             "    } catch (e) {console.warn('DOMMutationObserver failed', e);}" +
             "  };" +

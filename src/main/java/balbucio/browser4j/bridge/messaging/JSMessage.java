@@ -17,6 +17,9 @@ public class JSMessage {
     public String method;
     public List<Object> params; // Using List for Jackson argument matching
 
+    // Security token propagation
+    public String bridgeToken;
+
     public JSMessage() {}
 
     /** Constructor for legacy and event-based messages. */

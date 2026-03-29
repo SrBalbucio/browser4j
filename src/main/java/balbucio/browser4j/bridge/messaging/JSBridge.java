@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,7 +30,12 @@ public class JSBridge {
     private final List<MessageHandler> handlers = new ArrayList<>();
     private final Map<String, BridgeModule> modules = new HashMap<>();
     private final JsonSerializer serializer = new JsonSerializer();
+    private final String bridgeToken = UUID.randomUUID().toString();
     private final Map<String, CompletableFuture<Object>> pendingEvaluations = new ConcurrentHashMap<>();
+
+    public String getBridgeToken() {
+        return bridgeToken;
+    }
 
     public JSBridge(CefClient client, Browser javaBrowser) {
         this.javaBrowser = javaBrowser;
@@ -72,6 +78,11 @@ public class JSBridge {
                     JSMessage msg = serializer.deserialize(request, JSMessage.class);
                     if (msg == null) {
                         callback.failure(400, "Invalid request format");
+                        return true;
+                    }
+
+                    if (msg.bridgeToken == null || !bridgeToken.equals(msg.bridgeToken)) {
+                        callback.failure(401, "Invalid bridge token");
                         return true;
                     }
 
@@ -212,7 +223,20 @@ public class JSBridge {
         sb.append("(function() {\n");
         sb.append("  if (window.__browser4j_initialized) return;\n");
         sb.append("  window.__browser4j_initialized = true;\n\n");
-        
+        sb.append("  const __browser4j_bridge_token = '" + bridgeToken + "';\n");
+        sb.append("  Object.defineProperty(window, '__browser4j_bridge_token', { value: __browser4j_bridge_token, writable: false, configurable: false });\n");
+        sb.append("  if (typeof window.bridge === 'function' && !window.__browser4j_bridge_safe_installed) {\n");
+        sb.append("    const __browser4j_native_bridge = window.bridge;\n");
+        sb.append("    const __browser4j_secure_bridge = function(payload) {\n");
+        sb.append("      if (!payload || typeof payload !== 'object') return;\n");
+        sb.append("      payload.bridgeToken = __browser4j_bridge_token;\n");
+        sb.append("      return __browser4j_native_bridge(payload);\n");
+        sb.append("    };\n");
+        sb.append("    Object.defineProperty(__browser4j_secure_bridge, '__browser4j_is_secure', { value: true, writable: false, configurable: false });\n");
+        sb.append("    Object.defineProperty(window, 'bridge', { value: __browser4j_secure_bridge, writable: false, configurable: false });\n");
+        sb.append("    window.__browser4j_bridge_safe_installed = true;\n");
+        sb.append("  }\n\n");
+
         for (Map.Entry<String, BridgeModule> entry : modules.entrySet()) {
             String moduleName = entry.getKey();
             BridgeModule module = entry.getValue();
