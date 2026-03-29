@@ -53,13 +53,16 @@ Mergulhe nas capacidades do Browser4j consultando nossos guias:
 2.  **[Configuração do Runtime](docs/01-runtime-config.md)** - Feature flags e inicialização.
 3.  **[API de Navegação](docs/02-browser-instance.md)** - Comandos básicos e avançados.
 4.  **[Intercepção de Rede](docs/03-events-network.md)** - Hooks de requests e cookies.
-5.  **[Gerenciador de Abas](docs/05-tab-manager.md)** - Lógica multi-janela.
-6.  **[Perfis e Isolamento](docs/07-profile-manager.md)** - Gerenciamento de usuários.
-7.  **[Gerenciador de Downloads](docs/09-download-manager.md)** - Fluxo de arquivos.
-8.  **[Histórico e Autocomplete](docs/10-history-manager.md)** - Persistência de navegação.
-9.  **[Cache Avançado](docs/11-cache-manager.md)** - Otimização de performance e disco.
-10. **[Modular JS Bridge](docs/12-js-bridge.md)** - Comunicação estruturada Java-JS.
-11. **[Automation API](docs/13-automation-api.md)** - Automação de navegador.
+5. **[Proxy Pool e Controle de Fingerprint](docs/04-proxy-pool.md)** - Proxy Pool e Controle de Fingerprint.
+6. **[Gerenciador de Abas](docs/05-tab-manager.md)** - Lógica multi-janela.
+7. **[HTML Parsing](docs/06-html-parsing.md)** - Extração de HTML, Parsing com Jsoup e Live-Tracking.
+8. **[Perfis e Isolamento](docs/07-profile-manager.md)** - Gerenciamento de usuários.
+9. **[Custom Error Handler](docs/08-error-handler.md)** - Tratamento de Erros do Browser
+10. **[Gerenciador de Downloads](docs/09-download-manager.md)** - Fluxo de arquivos.
+11. **[Histórico e Autocomplete](docs/10-history-manager.md)** - Persistência de navegação.
+12. **[Cache Avançado](docs/11-cache-manager.md)** - Otimização de performance e disco.
+13. **[Modular JS Bridge](docs/12-js-bridge.md)** - Comunicação estruturada Java-JS.
+14. **[Automation API](docs/13-automation-api.md)** - Automação de navegador.
 
 ---
 
