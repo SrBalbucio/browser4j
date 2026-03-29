@@ -39,6 +39,15 @@ public class Tab {
                         state.setIcon(siteMetadata.getIcon());
                         state.setDescription(siteMetadata.getDescription());
                         state.setKeywords(siteMetadata.getKeywords());
+                        state.setThemeColor(siteMetadata.getThemeColor());
+                        state.setBackgroundColor(siteMetadata.getBackgroundColor());
+                        state.setViewport(siteMetadata.getViewport());
+                        state.setManifestUrl(siteMetadata.getManifestUrl());
+                        state.setPwaCapable(siteMetadata.isPwaCapable());
+                        state.setLanguage(siteMetadata.getLanguage());
+                        state.setAutoTranslationEnabled(siteMetadata.isAutoTranslationEnabled());
+                        state.setRobots(siteMetadata.getRobots());
+                        state.setCanonical(siteMetadata.getCanonical());
                     }
                 }).exceptionally(err -> {
                     // ignore metadata fetch failures; PAGE still loads

@@ -71,7 +71,7 @@ browser.addDomMutationListener(new DomMutationListener() {
 - Validação de estrutura dinâmica (elementos adicionados/removidos/alterados)
 - Triggers de automação reativos a mudanças de DOM
 
-## 4. Metadata da aba (title, icon, descrição, keywords)
+## 4. Metadata da aba (title, icon, descrição, keywords, UI/Tema, PWA, tradução, SEO)
 
 A classe `TabState` agora guarda metadados de site:
 
@@ -80,6 +80,14 @@ A classe `TabState` agora guarda metadados de site:
 - `icon` (favicon / apple-touch-icon)
 - `description` (meta description / og:description)
 - `keywords` (meta keywords)
+- `themeColor` / `backgroundColor` (`meta[name=theme-color]`, `meta[name=msapplication-TileColor]`)
+- `viewport` (`meta[name=viewport]`)
+- `manifestUrl` (`link[rel=manifest]`)
+- `pwaCapable` (`meta[name=mobile-web-app-capable|apple-mobile-web-app-capable]`)
+- `language` (`<html lang>` / `meta[http-equiv=content-language]`)
+- `autoTranslationEnabled` (meta de tradução automática detectada)
+- `robots` (`meta[name=robots]`)
+- `canonical` (`link[rel=canonical]`)
 
 O `Tab` atualiza esses campos automaticamente no evento `onLoadEnd`, usando `browser.getSiteMetadata()`.
 
