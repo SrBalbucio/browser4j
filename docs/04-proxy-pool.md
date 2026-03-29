@@ -29,6 +29,7 @@ FingerprintProfile fingerprint = FingerprintProfile.builder()
 // Encapsulando no BrowserProfile
 BrowserProfile meuProfile = BrowserProfile.builder()
         .fingerprint(fingerprint)
+        // .profileEntry(perfil)  ← opcional: vincule um Perfil Persistente (ver doc 07)
         .build();
 ```
 

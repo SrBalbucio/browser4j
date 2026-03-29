@@ -114,4 +114,41 @@ browser.onConsoleMessage((String logMensagem) -> {
 
 ---
 
+### Perfis Persistentes
+
+O `ProfileManager` permite criar **contextos de usuário nomeados** salvos no disco — com preferências de tema, idioma, fuso horário e zoom que sobrevivem entre execuções da JVM.
+
+> [!IMPORTANT]
+> `activateProfile()` **deve ser chamado antes de `BrowserRuntime.init()`**, pois define o diretório de cache que o Chromium usará desde o início.
+
+```java
+import balbucio.browser4j.browser.profile.ProfileManager;
+import balbucio.browser4j.browser.profile.ProfilePreferences;
+import balbucio.browser4j.browser.profile.ProfileEntry;
+import balbucio.browser4j.security.profile.BrowserProfile;
+
+// 1. Ativar ANTES do init()
+ProfileManager.get().activateProfile("perfil-joao");
+BrowserRuntime.init(BrowserRuntimeConfiguration.builder().build());
+
+// 2. Registrar preferências (só necessário na primeira vez)
+ProfilePreferences prefs = ProfilePreferences.builder()
+    .language("pt-BR")
+    .timezone("America/Sao_Paulo")
+    .theme(ProfilePreferences.Theme.DARK)
+    .zoomLevel(1.1)
+    .build();
+ProfileEntry perfil = ProfileManager.get().register("perfil-joao", "João", prefs);
+
+// 3. Criar sessão ligada ao perfil
+BrowserProfile profile = BrowserProfile.builder().profileEntry(perfil).build();
+Session sessao = Session.create(profile);
+Browser browser = CefBrowserImpl.create(BrowserRuntime.getCefApp(),
+        BrowserOptions.builder().session(sessao).build());
+```
+
+Consulte o guia completo: [Gerenciamento de Perfis Persistentes →](07-profile-manager.md)
+
+---
+
 [Próximo: Lidando com Eventos, API de Rede, Cookies e Segurança →](03-events-network.md)

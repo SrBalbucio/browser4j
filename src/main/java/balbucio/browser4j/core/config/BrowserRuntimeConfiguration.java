@@ -43,7 +43,9 @@ public class BrowserRuntimeConfiguration {
     }
 
     public static class Builder {
-        private String cachePath = new File(".cache").getAbsolutePath();
+        private String cachePath = System.getProperty(
+                balbucio.browser4j.browser.profile.ProfileManager.CACHE_PATH_PROPERTY,
+                new File(".cache").getAbsolutePath());
         private String userDataPath = new File(".userdata").getAbsolutePath();
         private boolean enableGPU = true;
         private boolean enableSandbox = false;

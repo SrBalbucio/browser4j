@@ -49,6 +49,10 @@ BrowserRuntime.init(config);
 #### `cachePath` e `userDataPath`
 Esses dois atributos controlam onde os dados persistentes (cookies, extensões pre-configuradas, localStorage) do navegador nativo do Chromium ficarão armazenados no disco rígido do sistema. Você pode configurá-los apontando para diretórios ocultos `new File(".minha-app/cache").getAbsolutePath()`.
 
+> [!IMPORTANT]
+> Se você estiver usando o **sistema de Perfis Persistentes** (`ProfileManager`), **não defina `cachePath` manualmente** no builder. Chame `ProfileManager.get().activateProfile("meu-perfil")` **antes** de `BrowserRuntime.init()` e o caminho será configurado automaticamente.
+> Veja o guia completo em [Gerenciamento de Perfis Persistentes →](07-profile-manager.md)
+
 #### `enableGPU`
 Ao ligar a GPU, o Chrome realiza a renderização de vídeo e animações ricas por aceleração de hardware pela placa de vídeo do usuário. Desative apenas para contornar instabilidades.
 
@@ -86,3 +90,4 @@ BrowserRuntime.shutdown();
 * [Proxy Pool e Configuração de Fingerprint/Sessões Consistentes →](04-proxy-pool.md)
 * [Gerenciamento de Multiplas Abas →](05-tab-manager.md)
 * [Extração de HTML e Parsing Jsoup →](06-html-parsing.md)
+* [Gerenciamento de Perfis Persistentes →](07-profile-manager.md)

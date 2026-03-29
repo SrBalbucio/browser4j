@@ -37,6 +37,8 @@ import org.cef.browser.CefRequestContext;
 import balbucio.browser4j.network.cookies.CookieManager;
 import balbucio.browser4j.security.profile.FingerprintInjector;
 import balbucio.browser4j.security.drm.DRMInjector;
+import balbucio.browser4j.browser.profile.ProfileManager;
+import balbucio.browser4j.browser.profile.ProfileEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -153,6 +155,15 @@ public class CefBrowserImpl implements Browser {
             @Override
             public void onLoadEnd(CefBrowser browser, org.cef.browser.CefFrame frame, int httpStatusCode) {
                 if (frame.isMain()) {
+                    // Apply persistent profile preferences on each page load
+                    if (options != null && options.getSession() != null
+                            && options.getSession().getProfile() != null) {
+                        ProfileEntry profileEntry = options.getSession().getProfile().getProfileEntry();
+                        if (profileEntry != null) {
+                            ProfileManager.get().applyPreferencesToContext(profileEntry,
+                                    browser.getRequestContext());
+                        }
+                    }
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadEnd(frame.getURL(), httpStatusCode);
                     }
