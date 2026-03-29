@@ -10,7 +10,9 @@ O **Browser4j** é uma biblioteca Java robusta projetada para embutir um navegad
 -   🚀 **Advanced Cache**: Sistema multi-camada com SQLite (metadados), SHA-256 (deduplicação) e GZIP (compressão).
 -   📂 **Download Manager**: Controle total do ciclo de vida de downloads com camadas de segurança integradas.
 -   📜 **History & Autocomplete**: Histórico persistente com busca ultra-rápida via **SQLite FTS5**.
--   🔗 **Modular JS Bridge**: Exponha métodos Java ao JavaScript com anotações e suporte a Promises.
+-   ✨ **Browser Automation**: High-level API for clicking, typing, and waiting on elements (Puppeteer-style).
+-   🧩 **Modular JS Bridge**: Expose Java modules to JavaScript with automatic proxy generation.
+-   🚀 **Built for Performance**: Lightweight and optimized for embedding.
 -   👤 **Profile Management**: Perfis totalmente isolados (cookies, localStorage, cache e histórico).
 -   📑 **Multi-Tab Support**: Gerenciador de abas flexível para aplicações multi-documento.
 -   🛠️ **DevTools & Hooks**: Acesso nativo ao Inspector do Chromium e intercepção de rede completa.
@@ -56,7 +58,8 @@ Mergulhe nas capacidades do Browser4j consultando nossos guias:
 7.  **[Gerenciador de Downloads](docs/09-download-manager.md)** - Fluxo de arquivos.
 8.  **[Histórico e Autocomplete](docs/10-history-manager.md)** - Persistência de navegação.
 9.  **[Cache Avançado](docs/11-cache-manager.md)** - Otimização de performance e disco.
-10. **[JS Bridge Modular](docs/12-js-bridge.md)** - Comunicação estruturada Java-JS.
+10. **[Modular JS Bridge](docs/12-js-bridge.md)** - Comunicação estruturada Java-JS.
+11. **[Automation API](docs/13-automation-api.md)** - Automação de navegador.
 
 ---
 

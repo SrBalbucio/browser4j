@@ -49,6 +49,7 @@ public interface Browser {
     balbucio.browser4j.browser.error.ErrorPageRegistry errors();
     balbucio.browser4j.download.api.DownloadManager downloads();
     balbucio.browser4j.cache.api.CacheManager cache();
+    balbucio.browser4j.automation.api.AutomationModule automation();
     
     java.util.concurrent.CompletableFuture<org.jsoup.nodes.Document> getDOM();
     java.util.concurrent.CompletableFuture<Boolean> isDRMProtected();

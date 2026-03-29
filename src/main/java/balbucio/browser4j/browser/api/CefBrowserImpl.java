@@ -55,6 +55,8 @@ import balbucio.browser4j.security.profile.FingerprintInjector;
 import balbucio.browser4j.security.drm.DRMInjector;
 import balbucio.browser4j.browser.profile.ProfileManager;
 import balbucio.browser4j.browser.profile.ProfileEntry;
+import balbucio.browser4j.automation.api.AutomationModule;
+import balbucio.browser4j.automation.api.AutomationModuleImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +85,7 @@ public class CefBrowserImpl implements Browser {
     private final CacheManager cacheManager;
     private final HistoryManager historyManager;
     private final AutocompleteService autocompleteService;
+    private final AutomationModuleImpl automationModule;
     private Consumer<String> consoleMessageHandler;
 
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -177,11 +180,14 @@ public class CefBrowserImpl implements Browser {
         boolean osrEnabled = BrowserRuntime.getConfig().isOsrEnabled();
         this.cefBrowser = cefClient.createBrowser("about:blank", osrEnabled, false, context);
         this.inputController = new InputController(this.cefBrowser);
+        this.automationModule = new AutomationModuleImpl(this.jsBridge, this.inputController);
 
         this.jsBridge.addHandler((event, data) -> {
             if ("__drm_detected".equals(event)) {
-                for (BrowserEventListener listener : listeners) {
-                    listener.onDRMDetected(this.cefBrowser.getURL());
+                if (listeners != null) {
+                    for (BrowserEventListener listener : listeners) {
+                        listener.onDRMDetected(this.cefBrowser.getURL());
+                    }
                 }
             } else if ("spa_navigation".equals(event)) {
                 recordHistory(this.cefBrowser.getURL());
@@ -380,6 +386,11 @@ public class CefBrowserImpl implements Browser {
     @Override
     public CacheManager cache() {
         return cacheManager;
+    }
+
+    @Override
+    public AutomationModule automation() {
+        return automationModule;
     }
 
     @Override
