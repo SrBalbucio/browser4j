@@ -98,6 +98,23 @@ subrede.addInterceptor(new RequestInterceptor() {
 });
 ```
 
+#### `FakeDns` (Substituição de DNS para hosts HTTP/HTTPS)
+Em cenários de teste ou injeção, o Browser4j agora permite forçar um hostname para outro destino via DNS interno. Use com cuidado: não se aplica a protocolos customizados (`file://`, `mailto://`, `custom://`, etc.).
+
+```java
+NetworkModule network = browser.network();
+network.addFakeDnsEntry("example.com", "127.0.0.1");
+network.addFakeDnsEntry("api.example.com", "internal-service.local:8080");
+
+// Opcional: listar entradas configuradas
+network.getFakeDnsEntries().forEach((host,dst) -> System.out.println(host + " -> " + dst));
+
+// Remover ou limpar
+network.removeFakeDnsEntry("example.com");
+network.clearFakeDnsEntries();
+```
+
+
 ---
 
 #### `SecurityModule` (Controle do Comportamento Aberto)
