@@ -69,6 +69,8 @@ import balbucio.browser4j.browser.error.BrowserError;
 import balbucio.browser4j.browser.error.BrowserErrorType;
 import balbucio.browser4j.browser.error.ErrorPageRegistry;
 import balbucio.browser4j.browser.error.ErrorPageRenderer;
+import balbucio.browser4j.browser.media.MediaModule;
+import balbucio.browser4j.browser.media.MediaModuleImpl;
 
 public class CefBrowserImpl implements Browser {
     private final CefBrowser cefBrowser;
@@ -87,6 +89,7 @@ public class CefBrowserImpl implements Browser {
     private final ErrorPageRegistry errorPageRegistry;
     private final ErrorPageRenderer errorPageRenderer;
     private final DownloadManager downloadManager;
+    private final MediaModule mediaModule;
     private final CacheManager cacheManager;
     private final HistoryManager historyManager;
     private final AutocompleteService autocompleteService;
@@ -143,6 +146,7 @@ public class CefBrowserImpl implements Browser {
             }
         }
         this.downloadManager = new DownloadManagerImpl(DownloadConfig.builder().build(), downloadRoot);
+        this.mediaModule = new MediaModuleImpl(this, this.jsBridge, this.downloadManager);
 
         // History Setup - Shared with profile dir if possible
         java.nio.file.Path historyPath = java.nio.file.Path.of(System.getProperty("user.home"), ".browser4j");
@@ -560,6 +564,11 @@ public class CefBrowserImpl implements Browser {
     @Override
     public balbucio.browser4j.storage.api.StorageModule storage() {
         return storageModule;
+    }
+
+    @Override
+    public balbucio.browser4j.browser.media.MediaModule media() {
+        return mediaModule;
     }
 
     @Override

@@ -77,3 +77,57 @@ browser.addDomMutationListener(new DomMutationListener() {
 - Pode gerar muito tráfego para alterações intensas; use lógica de filtro no listener para evitar sobrecarga.
 - Esse mecanismo complementa `getDOM()` e permite use cases de monitoramento contínuo enquanto a página está ativa.
 
+## 3. API de Mídia (imagens vídeo áudio) com detecção de novas mídias
+
+O Browser4j agora expõe o módulo:
+
+- `browser.media().listMedia()` – lista todas as mídias (`img`, `video`, `audio`) presentes na página em execução.
+- `browser.media().scanMedia()` – mesma função, re-scaneia o DOM e retorna o conjunto detectado.
+- `browser.media().addMediaListener(MediaListener)` – recebe apenas novos recursos de mídia descobertos após alterações do DOM.
+- `browser.media().downloadMedia(src, destination)` / `downloadMedia(MediaResource, destination)` – baixa para arquivo local.
+
+### Modelo `MediaResource`
+
+- `id` (composição: tag+src+id+class)
+- `tag` (`img` / `video` / `audio`)
+- `src`
+- `mediaType`
+- `alt`, `poster`, `width`, `height`, `duration`, `outerHTML`
+
+### Exemplo de lista e download
+
+```java
+import balbucio.browser4j.browser.media.MediaResource;
+
+browser.media().listMedia().thenAccept(mediaList -> {
+    for (MediaResource m : mediaList) {
+        System.out.println("Encontrado: " + m.getTag() + " - " + m.getSrc());
+        if (m.getSrc() != null && m.getSrc().startsWith("http")) {
+            java.nio.file.Path destino = java.nio.file.Path.of("/tmp", java.nio.file.Paths.get(new java.net.URI(m.getSrc()).getPath()).getFileName().toString());
+            browser.media().downloadMedia(m, destino).thenAccept(path -> {
+                System.out.println("Baixado em: " + path);
+            }).exceptionally(ex -> {
+                ex.printStackTrace();
+                return null;
+            });
+        }
+    }
+}).exceptionally(ex -> {
+    ex.printStackTrace();
+    return null;
+});
+```
+
+### Exemplo de escuta incremental de novas mídias
+
+```java
+browser.media().addMediaListener(new MediaListener() {
+    @Override
+    public void onMediaDiscovered(List<MediaResource> newMedia) {
+        newMedia.forEach(m -> System.out.println("Nova mídia: " + m.getTag() + " -> " + m.getSrc()));
+    }
+});
+```
+
+> Nota: o módulo de mídia usa o `DomMutationListener` já existente para disparar detecção de novos recursos sempre que o DOM muda.
+
