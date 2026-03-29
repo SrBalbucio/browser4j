@@ -93,3 +93,4 @@ BrowserRuntime.shutdown();
 * [Gerenciamento de Perfis Persistentes →](07-profile-manager.md)
 * [Tratamento de Erros do Browser →](08-error-handler.md)
 * [Gerenciamento de Downloads →](09-download-manager.md)
+* [Gerenciamento de Histórico e Autocomplete →](10-history-manager.md)

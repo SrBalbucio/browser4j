@@ -43,6 +43,9 @@ import balbucio.browser4j.security.api.SecurityModule;
 import balbucio.browser4j.devtools.DevToolsModule;
 import balbucio.browser4j.streaming.Frame;
 import org.cef.browser.CefRequestContext;
+import balbucio.browser4j.history.api.HistoryManager;
+import balbucio.browser4j.history.api.HistoryManagerImpl;
+import balbucio.browser4j.history.service.AutocompleteService;
 import balbucio.browser4j.network.cookies.CookieManager;
 import balbucio.browser4j.security.profile.FingerprintInjector;
 import balbucio.browser4j.security.drm.DRMInjector;
@@ -73,6 +76,8 @@ public class CefBrowserImpl implements Browser {
     private final ErrorPageRegistry errorPageRegistry;
     private final ErrorPageRenderer errorPageRenderer;
     private final DownloadManagerImpl downloadManager;
+    private final HistoryManager historyManager;
+    private final AutocompleteService autocompleteService;
     private Consumer<String> consoleMessageHandler;
 
     private final DevToolsModule devToolsModule = new DevToolsModule() {
@@ -125,6 +130,17 @@ public class CefBrowserImpl implements Browser {
         }
         this.downloadManager = new DownloadManagerImpl(DownloadConfig.builder().build(), downloadRoot);
 
+        // History Setup - Shared with profile dir if possible
+        java.nio.file.Path historyPath = java.nio.file.Path.of(System.getProperty("user.home"), ".browser4j");
+        if (options != null && options.getSession() != null && options.getSession().getProfile() != null) {
+            ProfileEntry pe = options.getSession().getProfile().getProfileEntry();
+            if (pe != null && pe.getProfilePath() != null) {
+                historyPath = java.nio.file.Path.of(pe.getProfilePath());
+            }
+        }
+        this.historyManager = new HistoryManagerImpl(historyPath);
+        this.autocompleteService = new AutocompleteService(this.historyManager);
+
         this.cefClient.addLifeSpanHandler(new PopupAndLifeSpanHandler(this.securityModule));
         this.cefClient.addDownloadHandler(new DownloadHandlerImpl(this.downloadManager, profileId));
 
@@ -153,6 +169,8 @@ public class CefBrowserImpl implements Browser {
                 for (BrowserEventListener listener : listeners) {
                     listener.onDRMDetected(this.cefBrowser.getURL());
                 }
+            } else if ("spa_navigation".equals(event)) {
+                recordHistory(this.cefBrowser.getURL());
             }
         });
     }
@@ -176,6 +194,28 @@ public class CefBrowserImpl implements Browser {
 
                     // Inject DRM hooks
                     browser.executeJavaScript(DRMInjector.INJECTION_SCRIPT, browser.getURL(), 0);
+
+                    // Inject SPA tracking hooks
+                    browser.executeJavaScript("""
+                            (function() {
+                                const pushState = history.pushState;
+                                history.pushState = function() {
+                                    pushState.apply(history, arguments);
+                                    window.cefQuery({ 
+                                        request: JSON.stringify({ event: 'spa_navigation', data: window.location.href }),
+                                        onSuccess: function(response) {},
+                                        onFailure: function(error_code, error_message) {}
+                                    });
+                                };
+                                window.addEventListener('popstate', function() {
+                                    window.cefQuery({ 
+                                        request: JSON.stringify({ event: 'spa_navigation', data: window.location.href }),
+                                        onSuccess: function(response) {},
+                                        onFailure: function(error_code, error_message) {}
+                                    });
+                                });
+                            })();
+                            """, browser.getURL(), 0);
 
                     for (BrowserEventListener listener : listeners) {
                         listener.onLoadStart(frame.getURL());
@@ -245,6 +285,7 @@ public class CefBrowserImpl implements Browser {
             @Override
             public void onAddressChange(CefBrowser browser, org.cef.browser.CefFrame frame, String url) {
                 if (frame.isMain()) {
+                    recordHistory(url);
                     for (BrowserEventListener listener : listeners) {
                         listener.onNavigation(url);
                     }
@@ -253,6 +294,7 @@ public class CefBrowserImpl implements Browser {
 
             @Override
             public void onTitleChange(CefBrowser browser, String title) {
+                recordTitle(title);
                 for (BrowserEventListener listener : listeners) {
                     listener.onTitleChange(title);
                 }
@@ -287,11 +329,44 @@ public class CefBrowserImpl implements Browser {
         loadHTML(errorPageRenderer.render(error));
     }
 
+    private void recordHistory(String url) {
+        if (options != null && options.getSession() != null && options.getSession().isIncognito()) {
+            return;
+        }
+        String profileId = "global";
+        if (options != null && options.getSession() != null && options.getSession().getProfile() != null) {
+            profileId = options.getSession().getProfile().getProfileEntry().getProfileId();
+        }
+        historyManager.recordVisit(url, profileId);
+    }
+
+    private void recordTitle(String title) {
+        if (options != null && options.getSession() != null && options.getSession().isIncognito()) {
+            return;
+        }
+        String profileId = "global";
+        if (options != null && options.getSession() != null && options.getSession().getProfile() != null) {
+            profileId = options.getSession().getProfile().getProfileEntry().getProfileId();
+        }
+        historyManager.updateTitle(cefBrowser.getURL(), title, profileId);
+    }
+
     @Override
     public ErrorPageRegistry errors() { return errorPageRegistry; }
 
     @Override
     public DownloadManager downloads() { return downloadManager; }
+
+    @Override
+    public HistoryManager history() { return historyManager; }
+
+    @Override
+    public AutocompleteService autocomplete() { return autocompleteService; }
+
+    @Override
+    public void openDevTools() {
+        devToolsModule.open();
+    }
 
     @Override
     public void loadURL(String url) {

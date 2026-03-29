@@ -1,6 +1,8 @@
 package balbucio.browser4j.browser.api;
 
 import balbucio.browser4j.browser.events.BrowserEventListener;
+import balbucio.browser4j.history.api.HistoryManager;
+import balbucio.browser4j.history.service.AutocompleteService;
 
 public interface Browser {
     void loadURL(String url);
@@ -16,6 +18,15 @@ public interface Browser {
 
     /** Loads a local HTML file by path using the native file:// protocol. */
     default void loadFile(java.nio.file.Path path) { loadFile(path.toFile()); }
+
+    /** Access history and search functionality. */
+    HistoryManager history();
+
+    /** Access autocomplete and suggestion service. */
+    AutocompleteService autocomplete();
+
+    /** Open the native Chromium Developer Tools. */
+    void openDevTools();
 
     void reload();
     void goBack();

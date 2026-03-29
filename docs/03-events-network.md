@@ -189,4 +189,4 @@ Além disso, a sua biblioteca de eventos (`BrowserEventListener`) agora entrega 
 
 ---
 
-[Próximo: Tratamento de Erros →](08-error-handler.md) | [Gerenciamento de Downloads →](09-download-manager.md)
+[Próximo: Tratamento de Erros →](08-error-handler.md) | [Gerenciamento de Downloads →](09-download-manager.md) | [Gerenciamento de Histórico →](10-history-manager.md)
