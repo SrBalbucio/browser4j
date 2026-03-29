@@ -91,3 +91,4 @@ BrowserRuntime.shutdown();
 * [Gerenciamento de Multiplas Abas →](05-tab-manager.md)
 * [Extração de HTML e Parsing Jsoup →](06-html-parsing.md)
 * [Gerenciamento de Perfis Persistentes →](07-profile-manager.md)
+* [Tratamento de Erros do Browser →](08-error-handler.md)

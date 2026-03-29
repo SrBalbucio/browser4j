@@ -35,8 +35,18 @@ browser.addEventListener(new BrowserEventListener() {
     public void onNavigation(String newBarUrl) {
          System.out.println("O Usuário navegou para: " + newBarUrl);
     }
+
+    // Disparado quando o Browser4j classifica e renderiza uma página de erro
+    // (DNS, SSL, timeout, 404, 5xx, etc.). Ver: docs/08-error-handler.md
+    @Override
+    public void onBrowserError(balbucio.browser4j.browser.error.BrowserError error) {
+        System.err.println("Erro de navegação: " + error.getType() + " → " + error.getUrl());
+    }
 });
 ```
+
+> [!TIP]
+> Para **personalizar as páginas de erro** exibidas pelo browser (DNS, SSL, 404, etc.) ou reagir a eles programaticamente, veja o guia dedicado: [Tratamento de Erros →](08-error-handler.md)
 
 ### Captura de Quadros (Renderização OSR - Headless / Invisível)
 Para aplicações sem tela física, ou "gravadores de ações do browser" você receberá pacotes limpos contendo matrizes ByteBuffer em tempo real na GPU do Frame de exibição. Lembre-se, o construtor Runtime deve ter explicitado `.osrEnabled(true)`.
@@ -173,3 +183,7 @@ browser.isDRMProtected().thenAccept(temDRM -> {
 ```
 
 Além disso, a sua biblioteca de eventos (`BrowserEventListener`) agora entrega o gatilho assíncrono padrão **`onDRMDetected(String url)`** para te notificar passivamente toda vez que o gatilho explodir!
+
+---
+
+[Próximo: Tratamento de Erros →](08-error-handler.md)
