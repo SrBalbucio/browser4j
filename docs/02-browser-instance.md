@@ -72,6 +72,46 @@ Browser browserPrivado = CefBrowserImpl.create(BrowserRuntime.getCefApp(), optio
 
 ---
 
+### Carregando HTML Diretamente
+
+Além de navegar para URLs, o Browser4j suporta carregar conteúdo HTML de três formas:
+
+#### Via String (gerado em tempo de execução)
+```java
+String meuHtml = "<html><body><h1>Olá, Browser4j!</h1></body></html>";
+browser.loadHTML(meuHtml);
+// Para HTMLs grandes (> 512KB), um arquivo temporário é criado automaticamente
+// para não estourar o limite de tamanho de uma data: URL.
+```
+
+#### Via InputStream (de recurso, classpath, socket...)
+```java
+// De um arquivo no classpath
+try (InputStream is = getClass().getResourceAsStream("/templates/pagina.html")) {
+    browser.loadHTML(is); // o stream é consumido e fechado internamente
+}
+
+// De qualquer outro InputStream (HTTP, banco, gerador...)
+browser.loadHTML(minhaResposta.getBody());
+```
+
+#### Via arquivo local (File / Path)
+```java
+import java.io.File;
+import java.nio.file.Path;
+
+// Por File
+browser.loadFile(new File("relatorio.html"));
+
+// Por Path (sobrecarga padrão da interface)
+browser.loadFile(Path.of("templates", "pagina.html"));
+```
+
+> [!TIP]
+> O método `loadFile()` usa o protocolo `file://` nativo do Chromium, o que mantém o contexto correto para recursos relativos como imagens, CSS e JS locais referenciados no HTML.
+
+---
+
 ### Comandos de Controle (Ações de Navegação e DOM)
 
 A gerência e comunicação com a Engine se dá utilizando métodos declarados:

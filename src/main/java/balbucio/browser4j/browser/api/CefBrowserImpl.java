@@ -14,7 +14,13 @@ import balbucio.browser4j.network.interception.NetworkHandlerImpl;
 import balbucio.browser4j.ui.abstraction.BrowserView;
 import balbucio.browser4j.ui.swing.SwingBrowserView;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.awt.Rectangle;
 
 import javax.swing.SwingUtilities;
@@ -225,10 +231,41 @@ public class CefBrowserImpl implements Browser {
 
     @Override
     public void loadHTML(String html) {
-        // A temporary data URL injection since CefBrowser core does not have a "loadHTML" natively taking just string 
-        // without URL or base context depending on version, data URI works reliably.
-        String dataUrl = "data:text/html;charset=utf-8," + java.net.URLEncoder.encode(html, java.nio.charset.StandardCharsets.UTF_8);
-        cefBrowser.loadURL(dataUrl);
+        // For small payloads use data: URI (fast, no I/O).
+        // For larger content write to a temp file and use file:// to avoid URL length limits.
+        final int DATA_URL_THRESHOLD = 512 * 1024; // 512 KB
+        byte[] bytes = html.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length <= DATA_URL_THRESHOLD) {
+            String encoded = java.net.URLEncoder.encode(html, StandardCharsets.UTF_8);
+            cefBrowser.loadURL("data:text/html;charset=utf-8," + encoded);
+        } else {
+            try {
+                Path tmp = Files.createTempFile("browser4j-html-", ".html");
+                tmp.toFile().deleteOnExit();
+                Files.write(tmp, bytes);
+                cefBrowser.loadURL(tmp.toUri().toString());
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to write HTML to temp file", e);
+            }
+        }
+    }
+
+    @Override
+    public void loadHTML(InputStream htmlStream) throws IOException {
+        byte[] bytes = htmlStream.readAllBytes();
+        htmlStream.close();
+        Path tmp = Files.createTempFile("browser4j-html-", ".html");
+        tmp.toFile().deleteOnExit();
+        Files.write(tmp, bytes);
+        cefBrowser.loadURL(tmp.toUri().toString());
+    }
+
+    @Override
+    public void loadFile(File file) {
+        if (!file.exists()) {
+            throw new IllegalArgumentException("File does not exist: " + file.getAbsolutePath());
+        }
+        cefBrowser.loadURL(file.toURI().toString());
     }
 
     @Override
