@@ -19,7 +19,10 @@ import balbucio.browser4j.browser.api.Session;
 
 // 1. (Recomendado) Utilize Sessions para manter consistência de Rede e Fingerprint:
 // Leia mais na seção [04 Proxy Pool e Fingerprint](04-proxy-pool.md)
-// Session session = Session.create(...);
+//
+// Você também pode acionar o MODO ANÔNIMO chamando .createIncognito(), o que gera
+// um sandbox isolado no contexto nativo do Chromium para todas as abas desta mesma sessão!
+// Session session = Session.createIncognito(meuProfile);
 
 // 2. Opcionalmente configurar isolamentos de perfil do browser instanciado:
 BrowserOptions opStatus = BrowserOptions.builder()
@@ -51,6 +54,23 @@ frame.getContentPane().add(meuComponenteNavegador, java.awt.BorderLayout.CENTER)
 frame.setVisible(true);
 ```
 
+
+### Modo Anônimo (Incognito) e Sessões Isoladas
+
+Sessões Isoladas permitem que o `Browser4j` crie um ambiente de memória temporária que **nunca grava dados, cache ou histórico no disco**, e desativa completamente o acesso aos Cookies Globais. 
+
+1. Se você quer instanciar um navegador privado puro (anônimo):
+```java
+// Crie a sessão isolada
+Session privateSession = Session.createIncognito(meuProfile);
+
+// Atrele à aba
+BrowserOptions options = BrowserOptions.builder().session(privateSession).build();
+Browser browserPrivado = CefBrowserImpl.create(BrowserRuntime.getCefApp(), options);
+```
+2. **Memória Compartilhada no Modo Anônimo**: Abas diferentes ou Instâncias de Browser que utilizarem a **mesma** variável `privateSession` compartilharão os Cookies Anônimos e o Cachê Memória viva entre si, da exata mesma forma que navegadores convencionais tratam "Múltiplas janelas anônimas". Ao fechar todos os navegadores daquela sessão, o loop de limpeza do JCEF destroí a memória limpa.
+
+---
 
 ### Comandos de Controle (Ações de Navegação e DOM)
 
