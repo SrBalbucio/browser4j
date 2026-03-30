@@ -128,9 +128,10 @@ SecurityModule seguranca = browser.security();
 // Proibe redirecionamentos sem controle e popups `target="_blank"` em botões maliciosos
 seguranca.setBlockPopups(true);
 
-> [!TIP]
-> Para um controle completo sobre downloads (progresso, pausa, segurança de extensões e histórico), use o novo **Download Manager**: [Gerenciamento de Downloads →](09-download-manager.md)
 ```
+
+> [!TIP]
+> Para um controle completo sobre downloads (progresso, pausa, segurança de extensões e histórico), use o **Download Manager**: [Gerenciamento de Downloads →](09-download-manager.md)
 
 ---
 
