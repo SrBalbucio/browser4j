@@ -1,0 +1,54 @@
+name: Deploy to Maven
+
+on:
+  push:
+    branches:
+      - latest
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          # We manually configure settings.xml below to handle multiple server IDs
+          
+      - name: Configure Maven Settings
+        run: |
+          mkdir -p ~/.m2
+          echo "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\" 
+                xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" 
+                xsi:schemaLocation=\"http://maven.apache.org/SETTINGS/1.0.0 
+                https://maven.apache.org/xsd/settings-1.0.0.xsd\">
+            <servers>
+              <server>
+                <id>hyperpowered-maven-releases</id>
+                <username>\${env.MAVEN_USERNAME}</username>
+                <password>\${env.MAVEN_PASSWORD}</password>
+              </server>
+              <server>
+                <id>hyperpowered-maven-snapshots</id>
+                <username>\${env.MAVEN_USERNAME}</username>
+                <password>\${env.MAVEN_PASSWORD}</password>
+              </server>
+            </servers>
+          </settings>" > ~/.m2/settings.xml
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+
+      - name: Build and Test
+        run: mvn clean test -Dnet.bytebuddy.experimental=true
+        # Tests will use the Linux natives added to pom.xml
+
+      - name: Deploy to HyperPowered Repository
+        run: mvn deploy -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}

@@ -106,6 +106,12 @@
             <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>me.friwi</groupId>
+            <artifactId>jcef-natives-linux-amd64</artifactId>
+            <version>jcef-cffac27+cef-143.0.14+gdd46a37+chromium-143.0.7499.193</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
