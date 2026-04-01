@@ -1,3 +1,17 @@
+# O BROWSER4J FOI MOVIDO PARA BROWSER4J-CEF
+
+Durante o desenvolvimento do projeto percebi que o JCEF tinha muitas peculiaridades e exigia uma estrutura de projeto
+diferente para lidar com as complexidades de integração, gerenciamento de dependências nativas e configuração específica
+do Chromium. Para evitar limitações decidi integrar o Browser4j diretamente com o JCEF, criando uma versão customizada
+chamada **[Browser4j-CEF](https://github.com/SrBalbucio/browser4j-cef)**. Essa abordagem me permitiu otimizar a
+arquitetura, simplificar a API e garantir uma experiência de desenvolvimento mais fluida, sem as restrições impostas por
+uma camada de abstração genérica.
+
+O projeto [continua aqui](https://github.com/SrBalbucio/browser4j-cef), se você utiliza o Browser4j, recomendo migrar
+para a versão CEF para aproveitar as melhorias e correções de bugs que foram implementadas durante o processo de
+desenvolvimento.
+
+
 # 🌐 Browser4j
 [![](https://img.shields.io/badge/HyperPowered-Use%20the%20official%20repository-yellow?color=%23279BF8&cacheSeconds=3600)](https://maven.dev.hyperpowered.net/#/releases/balbucio/browser4j/)
 
